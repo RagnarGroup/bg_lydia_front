@@ -309,6 +309,8 @@ export function Composer({
           ref={textareaRef}
           value={value}
           disabled={disabled}
+          spellCheck
+          lang="es"
           onChange={(e) => {
             setValue(e.target.value);
             setHighlighted(0);
