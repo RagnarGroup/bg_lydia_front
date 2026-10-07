@@ -132,8 +132,8 @@ function KnowledgeSection() {
                   colSpan={5}
                   className="border-b border-line-soft py-6 text-center text-sm text-muted"
                 >
-                  Todavía no hay entradas. La IA usa las plantillas de chat y
-                  las respuestas previas de las asesoras.
+                  Todavía no hay entradas. Mientras tanto, la IA usa las
+                  plantillas de chat y la conversación abierta.
                 </td>
               </tr>
             )}
