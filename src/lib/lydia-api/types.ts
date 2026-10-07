@@ -272,3 +272,35 @@ export interface EvoPersonalInsights {
   fuentes: Record<string, number>;
   tareas: { count: number };
 }
+
+// LYD-69: seccion "Agente" -- conocimiento editable de la sugerencia de
+// respuesta con IA.
+export const AGENT_KNOWLEDGE_CATEGORIES = [
+  "programas",
+  "precios",
+  "horarios",
+  "promociones",
+  "preguntas_frecuentes",
+  "tono",
+  "otro",
+] as const;
+export type AgentKnowledgeCategory = (typeof AGENT_KNOWLEDGE_CATEGORIES)[number];
+
+export interface EvoAgentKnowledge {
+  id: string;
+  title: string;
+  category: AgentKnowledgeCategory;
+  content: string;
+  active: boolean;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EvoAgentInstructions {
+  instructions: string;
+  isDefault: boolean;
+  defaultInstructions: string;
+  updatedBy: string | null;
+  updatedAt: string | null;
+}

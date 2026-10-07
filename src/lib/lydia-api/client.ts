@@ -2,6 +2,8 @@ import "server-only";
 import type {
   ChatStatus,
   EvoAgent,
+  EvoAgentInstructions,
+  EvoAgentKnowledge,
   EvoCalendarEvent,
   EvoCalendarEventType,
   EvoConversation,
@@ -409,4 +411,44 @@ export async function updateBotFlow(
     method: "PUT",
     body: JSON.stringify({ instanceName, ...data }),
   });
+}
+
+// LYD-69: seccion "Agente" (conocimiento editable de la sugerencia con IA). El
+// gateo por rol vive en los route handlers que llaman a esto.
+
+export async function listAgentKnowledge(): Promise<EvoAgentKnowledge[]> {
+  return evoFetch<EvoAgentKnowledge[]>(`/crm/agent/knowledge`);
+}
+
+export async function createAgentKnowledge(
+  data: Pick<EvoAgentKnowledge, "title" | "category" | "content"> & { active?: boolean; updatedBy?: string },
+): Promise<EvoAgentKnowledge> {
+  return evoFetch<EvoAgentKnowledge>(`/crm/agent/knowledge`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateAgentKnowledge(
+  id: string,
+  data: Partial<Pick<EvoAgentKnowledge, "title" | "category" | "content" | "active">> & { updatedBy?: string },
+): Promise<EvoAgentKnowledge> {
+  return evoFetch<EvoAgentKnowledge>(`/crm/agent/knowledge/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export async function deleteAgentKnowledge(id: string): Promise<void> {
+  await evoFetch<void>(`/crm/agent/knowledge/${id}`, { method: "DELETE" });
+}
+
+export async function getAgentInstructions(): Promise<EvoAgentInstructions> {
+  return evoFetch<EvoAgentInstructions>(`/crm/agent/instructions`);
+}
+
+// Texto vacio = volver a las instrucciones por defecto.
+export async function setAgentInstructions(data: {
+  instructions: string;
+  updatedBy?: string;
+}): Promise<EvoAgentInstructions> {
+  return evoFetch<EvoAgentInstructions>(`/crm/agent/instructions`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function testAgentSuggestion(message: string): Promise<{ suggestion: string }> {
+  return evoFetch<{ suggestion: string }>(`/crm/agent/test`, { method: "POST", body: JSON.stringify({ message }) });
 }

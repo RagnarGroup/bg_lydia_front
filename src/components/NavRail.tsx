@@ -21,7 +21,9 @@ type NavSection = {
   id: string;
   label: string;
   icon: IconName;
-  items: { label: string; href: string; icon: IconName }[];
+  // LYD-69: adminOnly esconde la entrada a las asesoras (el gateo real vive en
+  // los route handlers del servidor, esto es solo UX).
+  items: { label: string; href: string; icon: IconName; adminOnly?: boolean }[];
   // LYD-43: seccion siempre desplegada, sin chevron ni forma de colapsarla.
   alwaysOpen?: boolean;
 };
@@ -63,6 +65,7 @@ const bottomEntries: NavEntry[] = [
     items: [
       { label: "Plantillas", href: "/automatizaciones/plantillas", icon: "tabla" },
       { label: "Bot", href: "/automatizaciones/bot", icon: "chat" },
+      { label: "Agente", href: "/automatizaciones/agente", icon: "foco", adminOnly: true },
     ],
   },
   {
@@ -215,7 +218,9 @@ export function NavRail() {
         )}
 
         {open &&
-          entry.items.map((item) => {
+          entry.items
+            .filter((item) => !item.adminOnly || agent?.role === "administrador")
+            .map((item) => {
             const active = pathname.startsWith(item.href);
             return (
               <Link
