@@ -7,6 +7,7 @@ import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { useTemplateGroups } from "@/lib/queries/template-groups";
 import type { InboxMessage } from "@/lib/lydia-api/inbox-types";
 import { Icon } from "@/components/icons";
+import { useSuggestReply } from "@/lib/queries/conversations";
 import { useEscapeKey } from "@/lib/hooks/useEscapeKey";
 
 // LYD-52: {key, message} crudo del mensaje citado -- lo que Evolution API
@@ -33,6 +34,8 @@ export interface ComposerAudioInput {
 }
 
 interface Props {
+  // LYD-68: conversacion sobre la que se pide la sugerencia de respuesta con IA.
+  conversationId?: string;
   onSend: (text: string, quoted?: ComposerQuoted) => Promise<void>;
   onSendMedia: (input: ComposerMediaInput) => Promise<void>;
   onSendAudio: (input: ComposerAudioInput) => Promise<void>;
@@ -71,6 +74,7 @@ function formatElapsed(seconds: number): string {
 }
 
 export function Composer({
+  conversationId,
   onSend,
   onSendMedia,
   onSendAudio,
@@ -83,6 +87,25 @@ export function Composer({
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // LYD-68: sugerencia de respuesta con IA. Solo copia el texto al textarea
+  // para que la asesora lo revise y lo envie ella -- nunca manda nada solo.
+  const suggestReply = useSuggestReply();
+  const handleSuggest = () => {
+    if (!conversationId) return;
+    suggestReply.mutate(conversationId, {
+      onSuccess: ({ suggestion }) => {
+        setValue(suggestion);
+        setHighlighted(0);
+        setError(null);
+        requestAnimationFrame(() => {
+          const textarea = textareaRef.current;
+          textarea?.focus();
+          textarea?.setSelectionRange(suggestion.length, suggestion.length);
+        });
+      },
+    });
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // LYD-55: picker de emojis para insertar en el texto (distinto de las
@@ -271,6 +294,19 @@ export function Composer({
           )}
         </div>
       )}
+      {suggestReply.isError && (
+        <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+          <span>No se pudo generar la sugerencia: {suggestReply.error.message}</span>
+          <button
+            type="button"
+            onClick={() => suggestReply.reset()}
+            aria-label="Cerrar aviso"
+            className="shrink-0 hover:opacity-70"
+          >
+            <Icon name="equis" size={14} />
+          </button>
+        </div>
+      )}
       <div className="relative rounded-2xl border border-line bg-surface">
         {replyingTo && (
           <div className="flex items-center justify-between gap-2 rounded-t-2xl border-b border-line-soft bg-bg-subtle px-3 py-1.5">
@@ -305,149 +341,167 @@ export function Composer({
           </div>
         )}
 
-        <textarea
-          ref={textareaRef}
-          value={value}
-          disabled={disabled}
-          spellCheck
-          lang="es"
-          onChange={(e) => {
-            setValue(e.target.value);
-            setHighlighted(0);
-            setError(null);
-          }}
-          onKeyDown={(e) => {
-            if (isSlashMode && filtered.length > 0) {
-              if (e.key === "ArrowDown") {
-                e.preventDefault();
-                setHighlighted((i) => Math.min(i + 1, filtered.length - 1));
-                return;
-              }
-              if (e.key === "ArrowUp") {
-                e.preventDefault();
-                setHighlighted((i) => Math.max(i - 1, 0));
-                return;
-              }
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                selectTemplate(filtered[highlighted]);
-                return;
-              }
-            }
-            if (e.key === "Escape" && isSlashMode) {
-              e.preventDefault();
-              setValue("");
-              return;
-            }
-            if (e.key === "Enter" && !e.shiftKey && !isSlashMode) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          rows={2}
-          placeholder="Escribe un mensaje o */* para mensajes predeterminados"
-          className="w-full resize-none rounded-t-2xl px-4 pt-3 text-sm text-ink-soft placeholder:text-muted focus:outline-none"
-        />
-        {isRecording ? (
-          <div className="flex items-center justify-between px-3 pb-2.5">
-            <div className="flex items-center gap-2 text-sm text-ink-soft">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-danger" />
-              Grabando… {formatElapsed(recordingSeconds)}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={cancelRecording}
-                aria-label="Descartar grabación"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-bg-subtle hover:text-danger"
-              >
-                <Icon name="basura" size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={stopAndSendRecording}
-                aria-label="Enviar nota de voz"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-white hover:bg-brand-dark"
-              >
-                <Icon name="check" size={16} />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between px-3 pb-2.5">
-            <div className="flex items-center gap-3 text-muted">
-              <div ref={emojiWrapperRef} className="relative">
-                <button
-                  type="button"
-                  aria-label="Emoji"
-                  disabled={disabled || isSending}
-                  onClick={() => setShowEmojiPicker((v) => !v)}
-                  className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-                    <line x1="9" y1="9" x2="9.01" y2="9" />
-                    <line x1="15" y1="9" x2="15.01" y2="9" />
-                  </svg>
-                </button>
-                {showEmojiPicker && (
-                  <div className="absolute bottom-full left-0 z-20 mb-2">
-                    <EmojiPicker
-                      onEmojiClick={insertEmoji}
-                      autoFocusSearch={false}
-                      width={320}
-                      height={380}
-                      searchPlaceholder="Buscar emoji"
-                    />
-                  </div>
-                )}
+        <div className="flex items-end">
+          <div className="min-w-0 flex-1">
+            <textarea
+              ref={textareaRef}
+              value={value}
+              disabled={disabled}
+              spellCheck
+              lang="es"
+              onChange={(e) => {
+                setValue(e.target.value);
+                setHighlighted(0);
+                setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (isSlashMode && filtered.length > 0) {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setHighlighted((i) => Math.min(i + 1, filtered.length - 1));
+                    return;
+                  }
+                  if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setHighlighted((i) => Math.max(i - 1, 0));
+                    return;
+                  }
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    selectTemplate(filtered[highlighted]);
+                    return;
+                  }
+                }
+                if (e.key === "Escape" && isSlashMode) {
+                  e.preventDefault();
+                  setValue("");
+                  return;
+                }
+                if (e.key === "Enter" && !e.shiftKey && !isSlashMode) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              rows={2}
+              placeholder="Escribe un mensaje o */* para mensajes predeterminados"
+              className="w-full resize-none rounded-tl-2xl px-4 pt-3 text-sm text-ink-soft placeholder:text-muted focus:outline-none"
+            />
+            {isRecording ? (
+              <div className="flex items-center justify-between px-3 pb-2.5">
+                <div className="flex items-center gap-2 text-sm text-ink-soft">
+                  <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-danger" />
+                  Grabando… {formatElapsed(recordingSeconds)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={cancelRecording}
+                    aria-label="Descartar grabación"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-bg-subtle hover:text-danger"
+                  >
+                    <Icon name="basura" size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={stopAndSendRecording}
+                    aria-label="Enviar nota de voz"
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-brand text-white hover:bg-brand-dark"
+                  >
+                    <Icon name="check" size={16} />
+                  </button>
+                </div>
               </div>
+            ) : (
+              <div className="flex items-center px-3 pb-2.5">
+                <div className="flex items-center gap-3 text-muted">
+                  <div ref={emojiWrapperRef} className="relative">
+                    <button
+                      type="button"
+                      aria-label="Emoji"
+                      disabled={disabled || isSending}
+                      onClick={() => setShowEmojiPicker((v) => !v)}
+                      className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                        <line x1="9" y1="9" x2="9.01" y2="9" />
+                        <line x1="15" y1="9" x2="15.01" y2="9" />
+                      </svg>
+                    </button>
+                    {showEmojiPicker && (
+                      <div className="absolute bottom-full left-0 z-20 mb-2">
+                        <EmojiPicker
+                          onEmojiClick={insertEmoji}
+                          autoFocusSearch={false}
+                          width={320}
+                          height={380}
+                          searchPlaceholder="Buscar emoji"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Adjuntar archivo"
+                    disabled={disabled || isSending}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                    </svg>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleFileChange}
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Nota de voz"
+                    disabled={disabled || isSending}
+                    onClick={startRecording}
+                    className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                      <path d="M19 10v2a7 7 0 01-14 0v-2" />
+                      <line x1="12" y1="19" x2="12" y2="23" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          {!isRecording && (
+            <div className="flex shrink-0 flex-col items-end gap-2 pb-2.5 pr-3">
               <button
                 type="button"
-                aria-label="Adjuntar archivo"
-                disabled={disabled || isSending}
-                onClick={() => fileInputRef.current?.click()}
-                className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={handleSuggest}
+                disabled={!conversationId || disabled || isSending || suggestReply.isPending}
+                aria-label="Sugerir respuesta con IA"
+                title="Sugerir respuesta con IA"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-bg-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-                </svg>
+                <Icon name="foco" size={18} className={suggestReply.isPending ? "animate-pulse text-brand" : undefined} />
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileChange}
-                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
-                className="hidden"
-              />
               <button
                 type="button"
-                aria-label="Nota de voz"
-                disabled={disabled || isSending}
-                onClick={startRecording}
-                className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={handleSend}
+                disabled={!value.trim() || disabled || isSending}
+                className="rounded-lg bg-muted-2 px-4 py-1.5 text-sm font-medium text-white transition-colors enabled:bg-brand enabled:hover:bg-brand-dark disabled:cursor-not-allowed"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                  <path d="M19 10v2a7 7 0 01-14 0v-2" />
-                  <line x1="12" y1="19" x2="12" y2="23" />
-                </svg>
+                {/* LYD-54: "disabled" ahora tambien cubre el bloqueo por ventana
+                    de 24h -- "Enviando…" seria enganioso ahi, isSending es lo
+                    unico que de verdad significa "en vuelo". */}
+                {isSending ? "Enviando…" : "Enviar"}
               </button>
             </div>
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={!value.trim() || disabled || isSending}
-              className="rounded-lg bg-muted-2 px-4 py-1.5 text-sm font-medium text-white transition-colors enabled:bg-brand enabled:hover:bg-brand-dark disabled:cursor-not-allowed"
-            >
-              {/* LYD-54: "disabled" ahora tambien cubre el bloqueo por ventana
-                  de 24h -- "Enviando…" seria enganioso ahi, isSending es lo
-                  unico que de verdad significa "en vuelo". */}
-              {isSending ? "Enviando…" : "Enviar"}
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

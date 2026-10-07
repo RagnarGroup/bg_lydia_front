@@ -170,6 +170,15 @@ export function useArchiveConversation() {
 
 // LYD-40: borrado real, irreversible -- el route handler rechaza esto si
 // el agente logueado no es administrador (no alcanza con esconder el boton).
+// LYD-68: pide una respuesta sugerida por IA; el llamador decide que hacer con
+// el texto (el composer lo copia al textarea, nunca se envia solo).
+export function useSuggestReply() {
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      fetchJson<{ suggestion: string }>(`/api/lydia/conversations/${conversationId}/suggest`, { method: "POST" }),
+  });
+}
+
 export function useDeleteConversation() {
   const queryClient = useQueryClient();
 

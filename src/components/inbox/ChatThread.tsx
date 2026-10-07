@@ -241,6 +241,7 @@ export function ChatThread({
         </div>
       )}
       <Composer
+        conversationId={conversation.id}
         onSend={onSend}
         onSendMedia={onSendMedia}
         onSendAudio={onSendAudio}

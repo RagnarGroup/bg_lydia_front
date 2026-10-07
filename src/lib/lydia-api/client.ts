@@ -262,6 +262,12 @@ export async function archiveConversation(chatId: string, archived: boolean): Pr
   });
 }
 
+// LYD-68: sugerencia de respuesta con IA para el composer. No envia nada al
+// cliente; el texto devuelto lo copia el front al textarea.
+export async function suggestReply(chatId: string): Promise<{ suggestion: string }> {
+  return evoFetch<{ suggestion: string }>(`/crm/conversations/${chatId}/suggest-reply`, { method: "POST" });
+}
+
 // LYD-40: borrado real (Chat + mensajes), irreversible -- el gateo por rol
 // (solo administrador) vive en el route handler que llama a esto, no aca.
 export async function deleteConversation(chatId: string): Promise<void> {
