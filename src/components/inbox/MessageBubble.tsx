@@ -160,12 +160,16 @@ export function MessageBubble({
         : "row"
       : "inline";
   const metaSpacer = <span aria-hidden className={`inline-block ${isOutbound ? "w-[4.25rem]" : "w-11"}`} />;
-  // Los stickers van sin burbuja, igual que en WhatsApp.
+  // Los stickers van sin burbuja, igual que en WhatsApp. Esquinas casi
+  // rectas como alla; solo el primero de cada racha lleva la esquina en
+  // punta hacia quien escribe.
   const bubbleClass = isSticker
     ? "relative"
-    : `relative rounded-2xl text-sm leading-relaxed ${
+    : `relative rounded-lg text-sm leading-relaxed ${
         media ? "overflow-hidden p-1.5" : "whitespace-pre-line px-3 py-1.5"
-      } ${isOutbound ? "rounded-tr-sm bg-brand text-white" : "rounded-tl-sm bg-surface text-ink shadow-sm"}`;
+      } ${isOutbound ? "bg-brand text-white" : "bg-surface text-ink shadow-sm"} ${
+        isGroupStart ? (isOutbound ? "rounded-tr-none" : "rounded-tl-none") : ""
+      }`;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
