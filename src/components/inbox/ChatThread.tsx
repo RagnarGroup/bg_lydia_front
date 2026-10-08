@@ -214,23 +214,32 @@ export function ChatThread({
               <div className="my-3 flex justify-center">
                 <span className="rounded-full bg-surface px-3 py-1 text-xs text-muted shadow-sm">{group.day}</span>
               </div>
-              <div className="flex flex-col gap-2">
-                {group.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    data-message-id={message.id}
-                    className="rounded-2xl transition-colors duration-700"
-                  >
-                    <MessageBubble
-                      message={message}
-                      instanceName={conversation.instanceName ?? ""}
-                      conversationId={conversation.id}
-                      onReply={setReplyingTo}
-                      onReact={onReact}
-                      onForward={onForward}
-                    />
-                  </div>
-                ))}
+              {/* LYD-76: como en WhatsApp, los mensajes seguidos de la misma
+                  persona van casi pegados; el aire extra va solo cuando
+                  cambia quien escribe. */}
+              <div className="flex flex-col gap-0.5">
+                {group.messages.map((message, i) => {
+                  const prev = group.messages[i - 1];
+                  const isGroupStart =
+                    !prev || prev.direction !== message.direction || prev.senderName !== message.senderName;
+                  return (
+                    <div
+                      key={message.id}
+                      data-message-id={message.id}
+                      className={`rounded-2xl transition-colors duration-700 ${isGroupStart && i > 0 ? "mt-2" : ""}`}
+                    >
+                      <MessageBubble
+                        message={message}
+                        instanceName={conversation.instanceName ?? ""}
+                        conversationId={conversation.id}
+                        onReply={setReplyingTo}
+                        onReact={onReact}
+                        onForward={onForward}
+                        isGroupStart={isGroupStart}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

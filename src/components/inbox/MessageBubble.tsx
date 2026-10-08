@@ -15,6 +15,9 @@ interface Props {
   onReply: (message: InboxMessage) => void;
   onReact: (message: InboxMessage, emoji: string) => void;
   onForward: (message: InboxMessage, targetConversationId: string) => void;
+  // LYD-76: primer mensaje de una racha de la misma persona -- solo ahi va
+  // el nombre de quien envio, como en los grupos de WhatsApp.
+  isGroupStart?: boolean;
 }
 
 // LYD-52: cuanto se aleja el menu del borde de la ventana para no salirse
@@ -113,7 +116,15 @@ function MessageMeta({
   );
 }
 
-export function MessageBubble({ message, instanceName, conversationId, onReply, onReact, onForward }: Props) {
+export function MessageBubble({
+  message,
+  instanceName,
+  conversationId,
+  onReply,
+  onReact,
+  onForward,
+  isGroupStart = true,
+}: Props) {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
   const fetchMediaDataUrl = useFetchMediaDataUrl();
@@ -165,9 +176,11 @@ export function MessageBubble({ message, instanceName, conversationId, onReply, 
 
   return (
     <div className={`flex ${isOutbound ? "justify-end" : "justify-start"}`}>
-      <div className="flex max-w-md flex-col gap-1">
-        {isOutbound && message.senderName && <span className="self-end text-xs text-muted">{message.senderName}</span>}
-        <div className="relative pb-2" onContextMenu={handleContextMenu}>
+      <div className="flex max-w-md flex-col gap-0.5">
+        {isOutbound && isGroupStart && message.senderName && (
+          <span className="self-end text-xs text-muted">{message.senderName}</span>
+        )}
+        <div className={`relative ${message.reactions.length > 0 ? "pb-2" : ""}`} onContextMenu={handleContextMenu}>
           <div className={bubbleClass}>
             {message.quotedPreview && (
               <p
