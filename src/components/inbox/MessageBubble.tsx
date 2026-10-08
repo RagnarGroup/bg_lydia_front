@@ -62,6 +62,57 @@ async function triggerDownload(dataUrl: string, fileName: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// LYD-76: hora + estado de lectura dentro de la burbuja, como en WhatsApp.
+// "inline" va al pie del texto; "overlay" va encima de una foto/video/sticker
+// sin texto, sobre una pastilla oscura para que se lea sobre cualquier imagen.
+function MessageMeta({
+  sentAt,
+  isOutbound,
+  read,
+  variant,
+  className = "",
+}: {
+  sentAt: string;
+  isOutbound: boolean;
+  read: boolean;
+  variant: "inline" | "overlay";
+  className?: string;
+}) {
+  const tone =
+    variant === "overlay"
+      ? "rounded-full bg-black/45 px-1.5 py-0.5 text-white"
+      : isOutbound
+        ? "text-white/75"
+        : "text-muted";
+  const checkTone = read ? (variant === "overlay" || isOutbound ? "text-sky-200" : "text-brand") : "";
+  return (
+    <span className={`flex items-center gap-0.5 whitespace-nowrap text-[11px] leading-none ${tone} ${className}`}>
+      {formatMessageTime(sentAt)}
+      {isOutbound && (
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          className={checkTone}
+          aria-label={read ? "Leído" : "Enviado"}
+        >
+          {read ? (
+            <>
+              <polyline points="1 12 6 17 11 10" />
+              <polyline points="9 15 17 6" />
+            </>
+          ) : (
+            <polyline points="4 12 9 17 20 6" />
+          )}
+        </svg>
+      )}
+    </span>
+  );
+}
+
 export function MessageBubble({ message, instanceName, conversationId, onReply, onReact, onForward }: Props) {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
@@ -86,6 +137,25 @@ export function MessageBubble({ message, instanceName, conversationId, onReply, 
       }
     : undefined;
 
+  // LYD-76: donde va la hora. Foto/video/sticker sin texto: encima de la
+  // imagen. Audio/documento sin texto: en una fila propia al pie. Texto (o
+  // pie de foto): al final de la ultima linea, con un espaciador invisible
+  // que le reserva el lugar para que el texto no quede debajo de la hora.
+  const isSticker = media?.kind === "sticker";
+  const metaPlacement: "inline" | "overlay" | "row" =
+    media && !media.caption
+      ? media.kind === "image" || media.kind === "video" || media.kind === "sticker"
+        ? "overlay"
+        : "row"
+      : "inline";
+  const metaSpacer = <span aria-hidden className={`inline-block ${isOutbound ? "w-[4.25rem]" : "w-11"}`} />;
+  // Los stickers van sin burbuja, igual que en WhatsApp.
+  const bubbleClass = isSticker
+    ? "relative"
+    : `relative rounded-2xl text-sm leading-relaxed ${
+        media ? "overflow-hidden p-1.5" : "whitespace-pre-line px-3 py-1.5"
+      } ${isOutbound ? "rounded-tr-sm bg-brand text-white" : "rounded-tl-sm bg-surface text-ink shadow-sm"}`;
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     const x = Math.min(e.clientX, window.innerWidth - MENU_WIDTH - 8);
@@ -98,23 +168,50 @@ export function MessageBubble({ message, instanceName, conversationId, onReply, 
       <div className="flex max-w-md flex-col gap-1">
         {isOutbound && message.senderName && <span className="self-end text-xs text-muted">{message.senderName}</span>}
         <div className="relative pb-2" onContextMenu={handleContextMenu}>
-          <div
-            className={`rounded-2xl text-sm leading-relaxed ${
-              message.media ? "overflow-hidden p-1.5" : "whitespace-pre-line px-4 py-3"
-            } ${isOutbound ? "rounded-tr-sm bg-brand text-white" : "rounded-tl-sm bg-surface text-ink shadow-sm"}`}
-          >
+          <div className={bubbleClass}>
             {message.quotedPreview && (
               <p
                 className={`mb-1.5 truncate rounded-md border-l-2 px-2 py-1 text-xs italic ${
                   isOutbound ? "border-white/60 bg-white/10 text-white/80" : "border-brand/60 bg-black/5 text-ink-soft"
-                } ${message.media ? "mx-1.5 mt-1.5" : "-mx-1"}`}
+                } ${message.media ? "mx-1.5 mt-1.5" : "-mx-0.5"}`}
               >
                 {message.quotedPreview}
               </p>
             )}
             {message.media && <MessageMedia messageId={message.id} media={message.media} instanceName={instanceName} />}
-            {message.media?.caption && <p className="whitespace-pre-line px-2.5 pb-1 pt-2">{message.media.caption}</p>}
-            {!message.media && message.text}
+            {message.media?.caption && (
+              <p className="whitespace-pre-line px-2 pb-0.5 pt-1.5">
+                {message.media.caption}
+                {metaSpacer}
+              </p>
+            )}
+            {!message.media && (
+              <>
+                {message.text}
+                {metaSpacer}
+              </>
+            )}
+            {metaPlacement === "overlay" ? (
+              <MessageMeta
+                sentAt={message.sentAt}
+                isOutbound={isOutbound}
+                read={message.read}
+                variant="overlay"
+                className={`absolute ${isSticker ? "bottom-1 right-1" : "bottom-3 right-3"}`}
+              />
+            ) : metaPlacement === "row" ? (
+              <div className="flex justify-end px-1.5 pb-0.5 pt-1">
+                <MessageMeta sentAt={message.sentAt} isOutbound={isOutbound} read={message.read} variant="inline" />
+              </div>
+            ) : (
+              <MessageMeta
+                sentAt={message.sentAt}
+                isOutbound={isOutbound}
+                read={message.read}
+                variant="inline"
+                className={`absolute ${message.media ? "bottom-2 right-3.5" : "bottom-1.5 right-2.5"}`}
+              />
+            )}
           </div>
 
           {message.reactions.length > 0 && (
@@ -128,20 +225,6 @@ export function MessageBubble({ message, instanceName, conversationId, onReply, 
                 </span>
               ))}
             </div>
-          )}
-        </div>
-        <div className={`flex items-center gap-1 text-xs text-muted ${isOutbound ? "justify-end" : ""}`}>
-          {/* LYD-61: la hora va en el pie de todos los mensajes, tambien los
-              salientes sin senderName (enviados desde el telefono, etc.) */}
-          <span>{formatMessageTime(message.sentAt)}</span>
-          {isOutbound && message.read && (
-            <span className="flex items-center gap-0.5 text-brand">
-              Leído
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <polyline points="1 12 6 17 11 10" />
-                <polyline points="9 15 17 6" />
-              </svg>
-            </span>
           )}
         </div>
       </div>
