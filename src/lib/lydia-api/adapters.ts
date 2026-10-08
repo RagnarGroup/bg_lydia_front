@@ -283,5 +283,6 @@ export function adaptConversation(conversation: EvoConversation): InboxConversat
       : conversation.updatedAt,
     unreadCount: conversation.unreadMessages,
     inboxChannel: channelFromIntegration(conversation.integration),
+    agentTags: conversation.agentTags ?? {},
   };
 }

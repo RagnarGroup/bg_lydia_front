@@ -4,6 +4,7 @@ import {
   assignConversation,
   deleteConversation,
   markConversationRead,
+  updateAgentTags,
   updateConversationContact,
 } from "@/lib/lydia-api/client";
 import { adaptConversation } from "@/lib/lydia-api/adapters";
@@ -17,12 +18,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const hasUnreadMessages = "unreadMessages" in (body ?? {});
   const hasContactOverride = "contactNameOverride" in (body ?? {}) || "contactPhoneOverride" in (body ?? {});
   const hasArchived = "archived" in (body ?? {});
+  const hasAgentTags = "agentTags" in (body ?? {});
 
-  if (!hasAssignedAgentId && !hasUnreadMessages && !hasContactOverride && !hasArchived) {
+  if (!hasAssignedAgentId && !hasUnreadMessages && !hasContactOverride && !hasArchived && !hasAgentTags) {
     return NextResponse.json(
       {
         error:
-          "assignedAgentId, unreadMessages, contactNameOverride/contactPhoneOverride o archived es requerido",
+          "assignedAgentId, unreadMessages, contactNameOverride/contactPhoneOverride, archived o agentTags es requerido",
       },
       { status: 400 },
     );
@@ -30,7 +32,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   try {
     let conversation;
-    if (hasArchived) {
+    if (hasAgentTags) {
+      conversation = await updateAgentTags(id, body.agentTags ?? {});
+    } else if (hasArchived) {
       conversation = await archiveConversation(id, body.archived);
     } else if (hasContactOverride) {
       conversation = await updateConversationContact(id, {

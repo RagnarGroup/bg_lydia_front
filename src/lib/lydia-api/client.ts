@@ -24,7 +24,7 @@ import type {
   LeadStage,
 } from "./types";
 import { foldReactions } from "./adapters";
-import type { InboxMessageReaction } from "./inbox-types";
+import type { AgentChatLine, AgentChatResult, InboxMessageReaction } from "./inbox-types";
 
 /**
  * Cliente del backend de Lydia: Evolution API (lydia_bg_back) para
@@ -268,6 +268,24 @@ export async function archiveConversation(chatId: string, archived: boolean): Pr
 // cliente; el texto devuelto lo copia el front al textarea.
 export async function suggestReply(chatId: string): Promise<{ suggestion: string }> {
   return evoFetch<{ suggestion: string }>(`/crm/conversations/${chatId}/suggest-reply`, { method: "POST" });
+}
+
+// LYD-74: chat de la asesora con el agente IA (mensaje + respuesta sugerida +
+// etiquetas, que el back ya deja guardadas en el Chat).
+export async function agentChat(chatId: string, messages: AgentChatLine[]): Promise<AgentChatResult> {
+  return evoFetch<AgentChatResult>(`/crm/conversations/${chatId}/agent-chat`, {
+    method: "POST",
+    body: JSON.stringify({ messages }),
+  });
+}
+
+// LYD-74: correccion manual de etiquetas -- solo cambian los grupos enviados;
+// null o "" borra ese grupo.
+export async function updateAgentTags(chatId: string, agentTags: Record<string, string | null>): Promise<EvoConversation> {
+  return evoFetch<EvoConversation>(`/crm/conversations/${chatId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ agentTags }),
+  });
 }
 
 // LYD-40: borrado real (Chat + mensajes), irreversible -- el gateo por rol

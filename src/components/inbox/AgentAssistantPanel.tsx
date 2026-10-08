@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icons";
-import { useSuggestReply } from "@/lib/queries/conversations";
+import { useAgentChat, useUpdateAgentTags } from "@/lib/queries/conversations";
+import type { AgentChatLine } from "@/lib/lydia-api/inbox-types";
 
-// LYD-73: etiquetas del playbook comercial, una por categoria. Por ahora
-// viven solo en memoria (se pierden al cambiar de chat); persistirlas y que la
-// IA las elija sola va con la logica del agente.
+// LYD-73/LYD-74: etiquetas del playbook comercial, una por categoria. Se
+// guardan por conversacion; la IA las actualiza en cada respuesta y la
+// asesora las corrige a mano. Mismos valores que AGENT_TAG_OPTIONS en
+// lydia_bg_back (agent-tags.ts): si se cambia uno, cambiar el otro.
 const TAG_GROUPS = [
   {
     id: "intencion",
@@ -68,6 +70,9 @@ type NewChatItem = ChatItem extends infer T
 
 interface Props {
   conversationId: string;
+  initialTags?: Record<string, string>;
+  // Sin backend (modo mock) no hay donde guardar etiquetas ni a quien preguntar.
+  canUseBackend: boolean;
   // Cambia cada vez que la asesora pulsa el foco del composer: pide una
   // sugerencia nueva sin escribir indicaciones.
   requestId: number;
@@ -76,15 +81,20 @@ interface Props {
 
 export function AgentAssistantPanel({
   conversationId,
+  initialTags,
+  canUseBackend,
   requestId,
   onUseSuggestion,
 }: Props) {
-  const [tags, setTags] = useState<Partial<Record<TagGroupId, string>>>({});
+  const [tags, setTags] = useState<Partial<Record<TagGroupId, string>>>(
+    initialTags ?? {},
+  );
   const [items, setItems] = useState<ChatItem[]>([]);
   const [draft, setDraft] = useState("");
   const nextId = useRef(1);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const suggestReply = useSuggestReply();
+  const agentChat = useAgentChat();
+  const updateTags = useUpdateAgentTags();
 
   const push = (item: NewChatItem) =>
     setItems((prev) => [
@@ -92,37 +102,78 @@ export function AgentAssistantPanel({
       { ...item, id: nextId.current++ } as ChatItem,
     ]);
 
-  const askSuggestion = () => {
-    suggestReply.mutate(conversationId, {
-      onSuccess: ({ suggestion }) =>
-        push({ role: "ia", text: "Te sugiero responder así:", suggestion }),
-      onError: (error) =>
-        push({
-          role: "error",
-          text: `No se pudo generar la sugerencia: ${error.message}`,
-        }),
+  // El historial que ve la IA: lo que escribio la asesora y lo que respondio
+  // ella misma (con la respuesta sugerida), sin los avisos de error.
+  const toLines = (list: ChatItem[]): AgentChatLine[] =>
+    list.flatMap((item): AgentChatLine[] => {
+      if (item.role === "asesora")
+        return [{ role: "asesora", text: item.text }];
+      if (item.role === "ia")
+        return [
+          {
+            role: "ia",
+            text: item.suggestion
+              ? `${item.text} Respuesta sugerida: "${item.suggestion}"`
+              : item.text,
+          },
+        ];
+      return [];
     });
+
+  const askAgent = (history: ChatItem[]) => {
+    if (!canUseBackend) {
+      push({
+        role: "error",
+        text: "El asistente solo funciona con el backend conectado.",
+      });
+      return;
+    }
+    agentChat.mutate(
+      { conversationId, messages: toLines(history) },
+      {
+        onSuccess: ({ reply, suggestion, tags: nextTags }) => {
+          push({
+            role: "ia",
+            text: reply || "Te sugiero responder así:",
+            suggestion: suggestion ?? undefined,
+          });
+          setTags(nextTags);
+        },
+        onError: (error) =>
+          push({
+            role: "error",
+            text: `No se pudo consultar a la IA: ${error.message}`,
+          }),
+      },
+    );
   };
 
   const handleSend = () => {
     const text = draft.trim();
-    if (!text || suggestReply.isPending) return;
-    push({ role: "asesora", text });
+    if (!text || agentChat.isPending) return;
+    const item: ChatItem = { id: nextId.current++, role: "asesora", text };
+    setItems((prev) => [...prev, item]);
     setDraft("");
-    askSuggestion();
+    askAgent([...items, item]);
+  };
+
+  const handleTagChange = (group: TagGroupId, value: string) => {
+    setTags((prev) => ({ ...prev, [group]: value || undefined }));
+    if (canUseBackend)
+      updateTags.mutate({ conversationId, tags: { [group]: value || null } });
   };
 
   const handledRequest = useRef(0);
   useEffect(() => {
     if (requestId === 0 || requestId === handledRequest.current) return;
     handledRequest.current = requestId;
-    askSuggestion();
+    askAgent(items);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo reacciona a un pedido nuevo del foco
   }, [requestId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [items.length, suggestReply.isPending]);
+  }, [items.length, agentChat.isPending]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -136,12 +187,7 @@ export function AgentAssistantPanel({
               </span>
               <select
                 value={tags[group.id] ?? ""}
-                onChange={(e) =>
-                  setTags((prev) => ({
-                    ...prev,
-                    [group.id]: e.target.value || undefined,
-                  }))
-                }
+                onChange={(e) => handleTagChange(group.id, e.target.value)}
                 className={`w-full rounded-md border border-line px-2 py-1.5 text-xs focus:border-brand focus:outline-none ${
                   tags[group.id] ? "font-medium text-ink" : "text-muted"
                 }`}
@@ -165,7 +211,7 @@ export function AgentAssistantPanel({
         </p>
 
         <div className="scroll-slim min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
-          {items.length === 0 && !suggestReply.isPending && (
+          {items.length === 0 && !agentChat.isPending && (
             <p className="rounded-lg bg-bg-subtle px-3 py-2.5 text-xs text-muted">
               Pídele una respuesta o dale una indicación, por ejemplo: “ofrécele
               una visita el sábado” o “responde la objeción de precio”. También
@@ -223,7 +269,7 @@ export function AgentAssistantPanel({
             ),
           )}
 
-          {suggestReply.isPending && (
+          {agentChat.isPending && (
             <p className="flex items-center gap-1.5 text-xs text-muted">
               <Icon
                 name="chispa"
@@ -255,7 +301,7 @@ export function AgentAssistantPanel({
           <button
             type="button"
             onClick={handleSend}
-            disabled={!draft.trim() || suggestReply.isPending}
+            disabled={!draft.trim() || agentChat.isPending}
             aria-label="Enviar indicación"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:bg-muted-2"
           >

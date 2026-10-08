@@ -147,6 +147,8 @@ export function LeadDetailPanel({
         <div className="mt-4 flex min-h-0 flex-1 flex-col">
           <AgentAssistantPanel
             conversationId={conversation.id}
+            initialTags={conversation.agentTags}
+            canUseBackend={canUseBackend}
             requestId={agentRequestId}
             onUseSuggestion={onUseSuggestion}
           />
