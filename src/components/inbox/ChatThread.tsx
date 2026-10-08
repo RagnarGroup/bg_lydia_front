@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { InboxConversation, InboxMessage } from "@/lib/lydia-api/inbox-types";
+import type {
+  InboxConversation,
+  InboxMessage,
+} from "@/lib/lydia-api/inbox-types";
 import { CHANNEL_META } from "@/lib/lydia-api/channel";
 import { formatLeadCardDate, formatMessageDay } from "@/lib/format";
 import { MessageBubble } from "./MessageBubble";
-import { Composer, type ComposerAudioInput, type ComposerMediaInput, type ComposerQuoted } from "./Composer";
+import {
+  Composer,
+  type ComposerAudioInput,
+  type ComposerMediaInput,
+  type ComposerQuoted,
+} from "./Composer";
 import { EditContactMenu } from "./EditContactMenu";
 import { Icon } from "@/components/icons";
 
@@ -27,6 +35,9 @@ interface Props {
   onBack?: () => void;
   // LYD-60: mensaje a mostrar (resultado del buscador) -- scroll + resaltado.
   focusMessageId?: string | null;
+  // LYD-73: puente entre el composer y el chat del agente del panel derecho.
+  onAskAgent?: () => void;
+  injectedText?: { id: number; text: string } | null;
 }
 
 // LYD-60: tope de paginas de historial (100 mensajes c/u, LYD-17) que se
@@ -54,6 +65,8 @@ export function ChatThread({
   hasMoreOlder = false,
   onBack,
   focusMessageId = null,
+  onAskAgent,
+  injectedText = null,
 }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -96,10 +109,13 @@ export function ChatThread({
   const autoLoadInFlightRef = useRef(false);
   const [autoLoadTick, setAutoLoadTick] = useState(0);
   useEffect(() => {
-    if (!focusMessageId || focusedIdRef.current === focusMessageId || isLoading) return;
+    if (!focusMessageId || focusedIdRef.current === focusMessageId || isLoading)
+      return;
 
     if (thread.some((m) => m.id === focusMessageId)) {
-      const el = scrollRef.current?.querySelector(`[data-message-id="${CSS.escape(focusMessageId)}"]`);
+      const el = scrollRef.current?.querySelector(
+        `[data-message-id="${CSS.escape(focusMessageId)}"]`,
+      );
       focusedIdRef.current = focusMessageId;
       if (!el) return;
       el.scrollIntoView({ block: "center" });
@@ -109,7 +125,10 @@ export function ChatThread({
       // el resaltado al instante; si el nodo se desmonta antes, quitarle la
       // clase a un nodo suelto no hace nada.
       el.classList.add(FOCUS_HIGHLIGHT_CLASS);
-      setTimeout(() => el.classList.remove(FOCUS_HIGHLIGHT_CLASS), FOCUS_HIGHLIGHT_MS);
+      setTimeout(
+        () => el.classList.remove(FOCUS_HIGHLIGHT_CLASS),
+        FOCUS_HIGHLIGHT_MS,
+      );
       return;
     }
 
@@ -136,7 +155,15 @@ export function ChatThread({
           setAutoLoadTick((t) => t + 1);
         });
     }
-  }, [focusMessageId, thread, isLoading, hasMoreOlder, loadingOlder, onLoadOlder, autoLoadTick]);
+  }, [
+    focusMessageId,
+    thread,
+    isLoading,
+    hasMoreOlder,
+    loadingOlder,
+    onLoadOlder,
+    autoLoadTick,
+  ]);
 
   // LYD-54: Meta rechaza texto libre si pasaron mas de 24h desde el ultimo
   // mensaje del contacto (solo deja plantillas pre-aprobadas fuera de esa
@@ -155,7 +182,9 @@ export function ChatThread({
 
   const lastInboundAt = findLastInboundAt(thread);
   const outsideSessionWindow =
-    thread.length > 0 && (lastInboundAt === null || now - new Date(lastInboundAt).getTime() > SESSION_WINDOW_MS);
+    thread.length > 0 &&
+    (lastInboundAt === null ||
+      now - new Date(lastInboundAt).getTime() > SESSION_WINDOW_MS);
 
   const groups = groupByDay(thread);
 
@@ -174,8 +203,12 @@ export function ChatThread({
             </button>
           )}
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-ink">{conversation.contact.name}</p>
-            <p className="text-xs text-muted">{CHANNEL_META[conversation.inboxChannel].label}</p>
+            <p className="truncate text-sm font-semibold text-ink">
+              {conversation.contact.name}
+            </p>
+            <p className="text-xs text-muted">
+              {CHANNEL_META[conversation.inboxChannel].label}
+            </p>
           </div>
         </div>
         <EditContactMenu
@@ -185,9 +218,18 @@ export function ChatThread({
         />
       </header>
 
-      <div ref={scrollRef} className="scroll-slim flex-1 overflow-y-auto px-6 py-4">
-        {isLoading && <p className="text-center text-sm text-muted">Cargando mensajes…</p>}
-        {error && <p className="text-center text-sm text-danger">No se pudieron cargar los mensajes: {error.message}</p>}
+      <div
+        ref={scrollRef}
+        className="scroll-slim flex-1 overflow-y-auto px-6 py-4"
+      >
+        {isLoading && (
+          <p className="text-center text-sm text-muted">Cargando mensajes…</p>
+        )}
+        {error && (
+          <p className="text-center text-sm text-danger">
+            No se pudieron cargar los mensajes: {error.message}
+          </p>
+        )}
         {!isLoading && !error && hasMoreOlder && (
           <div className="mb-3 flex justify-center">
             <button
@@ -205,7 +247,9 @@ export function ChatThread({
           groups.map((group) => (
             <div key={group.day}>
               <div className="my-3 flex justify-center">
-                <span className="rounded-full bg-surface px-3 py-1 text-xs text-muted shadow-sm">{group.day}</span>
+                <span className="rounded-full bg-surface px-3 py-1 text-xs text-muted shadow-sm">
+                  {group.day}
+                </span>
               </div>
               <div className="flex flex-col gap-3">
                 {group.messages.map((message) => (
@@ -235,8 +279,9 @@ export function ChatThread({
           <Icon name="ajustes" size={14} className="mt-0.5 shrink-0" />
           <p>
             Pasaron más de 24 h desde el último mensaje del contacto
-            {lastInboundAt && ` (${formatLeadCardDate(lastInboundAt)})`}. Meta bloquea el envío de texto libre fuera de
-            esa ventana — esperá a que te escriba de nuevo o usá una plantilla aprobada.
+            {lastInboundAt && ` (${formatLeadCardDate(lastInboundAt)})`}. Meta
+            bloquea el envío de texto libre fuera de esa ventana — esperá a que
+            te escriba de nuevo o usá una plantilla aprobada.
           </p>
         </div>
       )}
@@ -248,6 +293,8 @@ export function ChatThread({
         disabled={sending || !conversation.id || outsideSessionWindow}
         replyingTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
+        onAskAgent={onAskAgent}
+        injectedText={injectedText}
       />
     </section>
   );

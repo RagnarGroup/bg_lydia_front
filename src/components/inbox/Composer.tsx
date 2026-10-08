@@ -24,7 +24,8 @@ export interface ComposerMediaInput {
 
 function replyPreviewText(message: InboxMessage): string {
   if (message.text) return message.text;
-  if (message.media) return `[archivo adjunto${message.media.fileName ? `: ${message.media.fileName}` : ""}]`;
+  if (message.media)
+    return `[archivo adjunto${message.media.fileName ? `: ${message.media.fileName}` : ""}]`;
   return "";
 }
 
@@ -44,7 +45,16 @@ interface Props {
   // menu contextual), null cuando el envio es normal.
   replyingTo?: InboxMessage | null;
   onCancelReply?: () => void;
+  // LYD-73: con el panel del agente visible, el foco abre ese chat en vez de
+  // escribir la sugerencia directo en el textarea.
+  onAskAgent?: () => void;
+  // LYD-73: texto elegido en el chat del agente ("Usar") para revisar aca.
+  // `id` cambia en cada envio para poder reusar el mismo texto dos veces.
+  injectedText?: { id: number; text: string } | null;
 }
+
+// Mismo breakpoint que `lg` de Tailwind: debajo, el panel del lead esta oculto.
+const SIDE_PANEL_QUERY = "(min-width: 1024px)";
 
 function mediatypeFromMime(mimetype: string): ComposerMediaInput["mediatype"] {
   if (mimetype.startsWith("image/")) return "image";
@@ -62,7 +72,8 @@ function readBlobAsBase64(blob: Blob): Promise<string> {
       const result = reader.result as string;
       resolve(result.slice(result.indexOf(",") + 1));
     };
-    reader.onerror = () => reject(reader.error ?? new Error("No se pudo leer el archivo"));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("No se pudo leer el archivo"));
     reader.readAsDataURL(blob);
   });
 }
@@ -81,6 +92,8 @@ export function Composer({
   disabled = false,
   replyingTo = null,
   onCancelReply,
+  onAskAgent,
+  injectedText = null,
 }: Props) {
   const [value, setValue] = useState("");
   const [highlighted, setHighlighted] = useState(0);
@@ -88,11 +101,34 @@ export function Composer({
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const [lastInjectedId, setLastInjectedId] = useState(
+    injectedText?.id ?? null,
+  );
+  if (injectedText && injectedText.id !== lastInjectedId) {
+    setLastInjectedId(injectedText.id);
+    setValue(injectedText.text);
+    setHighlighted(0);
+    setError(null);
+  }
+  useEffect(() => {
+    if (!injectedText) return;
+    const textarea = textareaRef.current;
+    textarea?.focus();
+    textarea?.setSelectionRange(
+      injectedText.text.length,
+      injectedText.text.length,
+    );
+  }, [injectedText]);
+
   // LYD-68: sugerencia de respuesta con IA. Solo copia el texto al textarea
   // para que la asesora lo revise y lo envie ella -- nunca manda nada solo.
   const suggestReply = useSuggestReply();
   const handleSuggest = () => {
     if (!conversationId) return;
+    if (onAskAgent && window.matchMedia(SIDE_PANEL_QUERY).matches) {
+      onAskAgent();
+      return;
+    }
     suggestReply.mutate(conversationId, {
       onSuccess: ({ suggestion }) => {
         setValue(suggestion);
@@ -117,7 +153,10 @@ export function Composer({
   useEffect(() => {
     if (!showEmojiPicker) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (emojiWrapperRef.current && !emojiWrapperRef.current.contains(e.target as Node)) {
+      if (
+        emojiWrapperRef.current &&
+        !emojiWrapperRef.current.contains(e.target as Node)
+      ) {
         setShowEmojiPicker(false);
       }
     };
@@ -183,7 +222,10 @@ export function Composer({
       recorder.start();
       setIsRecording(true);
       setRecordingSeconds(0);
-      recordingTimerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+      recordingTimerRef.current = setInterval(
+        () => setRecordingSeconds((s) => s + 1),
+        1000,
+      );
     } catch {
       setError("No se pudo acceder al micrófono");
     }
@@ -199,16 +241,25 @@ export function Composer({
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
     recorder.onstop = async () => {
-      const blob = new Blob(recordedChunksRef.current, { type: recorder.mimeType });
+      const blob = new Blob(recordedChunksRef.current, {
+        type: recorder.mimeType,
+      });
       stopRecordingStream();
       setIsRecording(false);
       setIsSending(true);
       try {
         const audio = await readBlobAsBase64(blob);
-        await onSendAudio({ audio, quoted: replyingTo ? replyingTo.raw : undefined });
+        await onSendAudio({
+          audio,
+          quoted: replyingTo ? replyingTo.raw : undefined,
+        });
         onCancelReply?.();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "No se pudo enviar la nota de voz");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "No se pudo enviar la nota de voz",
+        );
       } finally {
         setIsSending(false);
       }
@@ -219,7 +270,10 @@ export function Composer({
   const { data: realGroups = [], error: groupsError } = useTemplateGroups();
   const isMockMode = !LYDIA_API_ENABLED || groupsError !== null;
   const templateGroups = isMockMode ? mockTemplateGroups : realGroups;
-  const allTemplates = useMemo(() => templateGroups.flatMap((group) => group.templates), [templateGroups]);
+  const allTemplates = useMemo(
+    () => templateGroups.flatMap((group) => group.templates),
+    [templateGroups],
+  );
 
   const isSlashMode = value.startsWith("/");
   const query = isSlashMode ? value.slice(1).toLowerCase() : "";
@@ -227,7 +281,9 @@ export function Composer({
     () =>
       isSlashMode
         ? allTemplates.filter(
-            (t) => t.label.toLowerCase().includes(query) || t.command.toLowerCase().includes(query),
+            (t) =>
+              t.label.toLowerCase().includes(query) ||
+              t.command.toLowerCase().includes(query),
           )
         : [],
     [isSlashMode, query, allTemplates],
@@ -270,7 +326,9 @@ export function Composer({
       });
       onCancelReply?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo enviar el archivo");
+      setError(
+        err instanceof Error ? err.message : "No se pudo enviar el archivo",
+      );
     } finally {
       setIsSending(false);
     }
@@ -288,7 +346,11 @@ export function Composer({
         <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
           <span>No se pudo enviar: {error}</span>
           {value.trim() && (
-            <button type="button" onClick={handleSend} className="shrink-0 font-semibold underline hover:no-underline">
+            <button
+              type="button"
+              onClick={handleSend}
+              className="shrink-0 font-semibold underline hover:no-underline"
+            >
               Reintentar
             </button>
           )}
@@ -296,7 +358,9 @@ export function Composer({
       )}
       {suggestReply.isError && (
         <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
-          <span>No se pudo generar la sugerencia: {suggestReply.error.message}</span>
+          <span>
+            No se pudo generar la sugerencia: {suggestReply.error.message}
+          </span>
           <button
             type="button"
             onClick={() => suggestReply.reset()}
@@ -325,7 +389,11 @@ export function Composer({
         )}
         {isSlashMode && (
           <div className="scroll-slim absolute bottom-full left-0 z-10 mb-2 max-h-64 w-full overflow-y-auto rounded-lg border border-line bg-surface py-1 shadow-lg">
-            {filtered.length === 0 && <p className="px-3 py-2 text-sm text-muted">Sin plantillas para &quot;{query}&quot;</p>}
+            {filtered.length === 0 && (
+              <p className="px-3 py-2 text-sm text-muted">
+                Sin plantillas para &quot;{query}&quot;
+              </p>
+            )}
             {filtered.map((template, i) => (
               <button
                 key={template.command}
@@ -334,8 +402,12 @@ export function Composer({
                 onMouseEnter={() => setHighlighted(i)}
                 className={`block w-full px-3 py-2 text-left ${i === highlighted ? "bg-brand/10" : "hover:bg-bg-subtle"}`}
               >
-                <p className="text-sm font-semibold text-brand">{template.command}</p>
-                <p className="truncate text-xs text-ink-soft">{template.body}</p>
+                <p className="text-sm font-semibold text-brand">
+                  {template.command}
+                </p>
+                <p className="truncate text-xs text-ink-soft">
+                  {template.body}
+                </p>
               </button>
             ))}
           </div>
@@ -422,7 +494,14 @@ export function Composer({
                       onClick={() => setShowEmojiPicker((v) => !v)}
                       className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <circle cx="12" cy="12" r="10" />
                         <path d="M8 14s1.5 2 4 2 4-2 4-2" />
                         <line x1="9" y1="9" x2="9.01" y2="9" />
@@ -448,7 +527,14 @@ export function Composer({
                     onClick={() => fileInputRef.current?.click()}
                     className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M21.44 11.05l-9.19 9.19a5 5 0 01-7.07-7.07l9.19-9.19a3.5 3.5 0 014.95 4.95l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
                     </svg>
                   </button>
@@ -466,7 +552,14 @@ export function Composer({
                     onClick={startRecording}
                     className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
                       <path d="M19 10v2a7 7 0 01-14 0v-2" />
                       <line x1="12" y1="19" x2="12" y2="23" />
@@ -481,12 +574,25 @@ export function Composer({
               <button
                 type="button"
                 onClick={handleSuggest}
-                disabled={!conversationId || disabled || isSending || suggestReply.isPending}
+                disabled={
+                  !conversationId ||
+                  disabled ||
+                  isSending ||
+                  suggestReply.isPending
+                }
                 aria-label="Sugerir respuesta con IA"
                 title="Sugerir respuesta con IA"
                 className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-bg-subtle hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Icon name="foco" size={18} className={suggestReply.isPending ? "animate-pulse text-brand" : undefined} />
+                <Icon
+                  name="foco"
+                  size={18}
+                  className={
+                    suggestReply.isPending
+                      ? "animate-pulse text-brand"
+                      : undefined
+                  }
+                />
               </button>
               <button
                 type="button"
