@@ -1,0 +1,3 @@
+# Commits de solo formato: git blame los salta (git config blame.ignoreRevsFile .git-blame-ignore-revs).
+# LYD-75: .prettierrc con printWidth 120 y normalizacion del repo.
+4fa9332bca7fd24fa4448363cd991b9f5272f3a7
