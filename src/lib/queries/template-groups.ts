@@ -47,10 +47,24 @@ export function useCreateTemplate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ groupId, command, label, body }: { groupId: string; command: string; label: string; body: string }) =>
+    mutationFn: ({
+      groupId,
+      command,
+      label,
+      body,
+    }: {
+      groupId: string;
+      command: string;
+      label: string;
+      body: string;
+    }) =>
       fetchJson<{ template: { id: string; command: string; label: string; body: string } }>(
         `/api/lydia/template-groups/${groupId}/templates`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ command, label, body }) },
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ command, label, body }),
+        },
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["templateGroups"] });
@@ -67,7 +81,11 @@ export function useUpdateTemplate() {
     mutationFn: ({ id, command, label, body }: { id: string; command: string; label: string; body: string }) =>
       fetchJson<{ template: { id: string; command: string; label: string; body: string } }>(
         `/api/lydia/templates/${id}`,
-        { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ command, label, body }) },
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ command, label, body }),
+        },
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["templateGroups"] });

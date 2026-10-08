@@ -23,7 +23,11 @@ export function MessageMedia({ messageId, media, instanceName }: Props) {
   const { data: dataUrl, isLoading, error } = useResolveMedia(messageId, media.raw, instanceName, enabled);
 
   if (error) {
-    return <p className="text-xs italic text-danger">No se pudo cargar el archivo{media.fileName ? `: ${media.fileName}` : ""}.</p>;
+    return (
+      <p className="text-xs italic text-danger">
+        No se pudo cargar el archivo{media.fileName ? `: ${media.fileName}` : ""}.
+      </p>
+    );
   }
 
   if (media.kind === "document") {

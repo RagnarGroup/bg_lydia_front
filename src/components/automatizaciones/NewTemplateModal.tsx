@@ -96,7 +96,9 @@ export function NewTemplateModal({ groups, onClose, onCreate }: Props) {
               placeholder="Ej. /precios adultos"
               className="w-full rounded-md border border-line px-2.5 py-2 text-sm focus:border-brand focus:outline-none"
             />
-            <p className="mt-1 text-xs text-muted">Lo que se escribe en el composer después de &quot;/&quot; para insertarla.</p>
+            <p className="mt-1 text-xs text-muted">
+              Lo que se escribe en el composer después de &quot;/&quot; para insertarla.
+            </p>
           </div>
 
           <div>

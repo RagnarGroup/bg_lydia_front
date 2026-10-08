@@ -83,7 +83,11 @@ export function PlantillasTable() {
           );
         }
         return [
-          { id: `tg-local-${Date.now()}`, title: data.newGroupTitle, templates: [{ command: data.command, label: data.label, body: data.body }] },
+          {
+            id: `tg-local-${Date.now()}`,
+            title: data.newGroupTitle,
+            templates: [{ command: data.command, label: data.label, body: data.body }],
+          },
           ...prev,
         ];
       });

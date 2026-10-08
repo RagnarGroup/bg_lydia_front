@@ -122,9 +122,7 @@ export function LeadsTable() {
           </tbody>
         </table>
 
-        {filtered.length === 0 && (
-          <p className="mt-8 text-center text-sm text-muted">Sin leads para este filtro.</p>
-        )}
+        {filtered.length === 0 && <p className="mt-8 text-center text-sm text-muted">Sin leads para este filtro.</p>}
       </div>
     </section>
   );

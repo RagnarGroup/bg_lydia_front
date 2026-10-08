@@ -1,17 +1,4 @@
-const MONTHS_SHORT = [
-  "ene",
-  "feb",
-  "mar",
-  "abr",
-  "may",
-  "jun",
-  "jul",
-  "ago",
-  "sep",
-  "oct",
-  "nov",
-  "dic",
-];
+const MONTHS_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
 const WEEKDAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
@@ -83,7 +70,9 @@ export function formatLeadCardDate(iso: string): string {
 }
 
 export function formatNumber(amount: number): string {
-  return Math.round(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return Math.round(amount)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export function formatCurrency(amount: number): string {

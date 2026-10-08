@@ -36,7 +36,9 @@ import type { AgentChatLine, AgentChatResult, InboxMessageReaction } from "./inb
 
 class LydiaApiConfigError extends Error {
   constructor(missing: string) {
-    super(`Falta configurar ${missing}. Copiá .env.example a .env.local y completá EVOLUTION_API_URL y EVOLUTION_API_KEY.`);
+    super(
+      `Falta configurar ${missing}. Copiá .env.example a .env.local y completá EVOLUTION_API_URL y EVOLUTION_API_KEY.`,
+    );
     this.name = "LydiaApiConfigError";
   }
 }
@@ -281,7 +283,10 @@ export async function agentChat(chatId: string, messages: AgentChatLine[]): Prom
 
 // LYD-74: correccion manual de etiquetas -- solo cambian los grupos enviados;
 // null o "" borra ese grupo.
-export async function updateAgentTags(chatId: string, agentTags: Record<string, string | null>): Promise<EvoConversation> {
+export async function updateAgentTags(
+  chatId: string,
+  agentTags: Record<string, string | null>,
+): Promise<EvoConversation> {
   return evoFetch<EvoConversation>(`/crm/conversations/${chatId}`, {
     method: "PATCH",
     body: JSON.stringify({ agentTags }),
@@ -407,8 +412,7 @@ export async function resolveWhatsappInstanceName(): Promise<string | null> {
   const instances = await listInstances();
   const whatsapp = instances.find(
     (i) =>
-      (i.integration === "WHATSAPP-BAILEYS" || i.integration === "WHATSAPP-BUSINESS") &&
-      i.connectionStatus === "open",
+      (i.integration === "WHATSAPP-BAILEYS" || i.integration === "WHATSAPP-BUSINESS") && i.connectionStatus === "open",
   );
   return whatsapp?.name ?? null;
 }

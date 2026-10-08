@@ -49,9 +49,7 @@ export function ForwardMessageDialog({ excludeConversationId, onPick, onClose }:
         </div>
         <div className="scroll-slim flex-1 overflow-y-auto p-1.5">
           {isLoading && <p className="px-2 py-2 text-xs text-muted">Cargando conversaciones…</p>}
-          {!isLoading && filtered.length === 0 && (
-            <p className="px-2 py-2 text-xs text-muted">Sin resultados.</p>
-          )}
+          {!isLoading && filtered.length === 0 && <p className="px-2 py-2 text-xs text-muted">Sin resultados.</p>}
           {filtered.map((c) => (
             <button
               key={c.id}

@@ -448,8 +448,7 @@ export const messages: Message[] = [
     conversationId: "conv-1",
     direction: "outbound",
     senderName: "Mafer",
-    text:
-      "¡Hola, Lucas! Soy Mafer de Brittany Group 😊\n\nPara Teens de 12 a 17 años, nuestro programa de inglés dura 18 meses, dividido en 3 niveles:\n\n🔵 Básico: 6 meses\n🟢 Intermedio: 6 meses\n🔴 Avanzado: 6 meses\n\n🕐 Horarios de lunes a viernes:\n• 7:15 a.m. – 8:45 a.m.\n• 9:00 a.m. – 10:30 a.m.\n• 10:45 a.m. – 12:15 p.m.\n• 12:30 p.m. – 2:00 p.m.\n• 2:10 p.m. – 3:40 p.m.\n• 3:50 p.m. – 5:20 p.m.\n• 5:30 p.m. – 7:00 p.m.\n• 7:15 p.m. – 8:45 p.m.\n\n📅 Horarios sabatinos:\n• 9:00 a.m. – 2:00 p.m.\n• 2:30 p.m. – 7:30 p.m.\n\n📍 Sede Miraflores: Av. Benavides 330, Miraflores",
+    text: "¡Hola, Lucas! Soy Mafer de Brittany Group 😊\n\nPara Teens de 12 a 17 años, nuestro programa de inglés dura 18 meses, dividido en 3 niveles:\n\n🔵 Básico: 6 meses\n🟢 Intermedio: 6 meses\n🔴 Avanzado: 6 meses\n\n🕐 Horarios de lunes a viernes:\n• 7:15 a.m. – 8:45 a.m.\n• 9:00 a.m. – 10:30 a.m.\n• 10:45 a.m. – 12:15 p.m.\n• 12:30 p.m. – 2:00 p.m.\n• 2:10 p.m. – 3:40 p.m.\n• 3:50 p.m. – 5:20 p.m.\n• 5:30 p.m. – 7:00 p.m.\n• 7:15 p.m. – 8:45 p.m.\n\n📅 Horarios sabatinos:\n• 9:00 a.m. – 2:00 p.m.\n• 2:30 p.m. – 7:30 p.m.\n\n📍 Sede Miraflores: Av. Benavides 330, Miraflores",
     sentAt: "2026-09-15T10:20:00-05:00",
     read: true,
   },

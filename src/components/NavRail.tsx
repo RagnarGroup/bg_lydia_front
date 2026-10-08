@@ -221,33 +221,29 @@ export function NavRail() {
           entry.items
             .filter((item) => !item.adminOnly || agent?.role === "administrador")
             .map((item) => {
-            const active = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`mb-1 flex items-center gap-3 rounded-md px-3 py-2 ${
-                  active ? "bg-white/15 font-semibold text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <Icon name={item.icon} size={17} />
-                {item.label}
-                {item.href === "/comunicaciones/inbox-chat" && unreadTotal > 0 && (
-                  <UnreadBadge count={unreadTotal} className="ml-auto" />
-                )}
-              </Link>
-            );
-          })}
+              const active = pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`mb-1 flex items-center gap-3 rounded-md px-3 py-2 ${
+                    active ? "bg-white/15 font-semibold text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <Icon name={item.icon} size={17} />
+                  {item.label}
+                  {item.href === "/comunicaciones/inbox-chat" && unreadTotal > 0 && (
+                    <UnreadBadge count={unreadTotal} className="ml-auto" />
+                  )}
+                </Link>
+              );
+            })}
       </div>
     );
   };
 
   return (
-    <aside
-      className={`flex h-full flex-col bg-brand ${
-        collapsed ? "w-16" : "w-60"
-      } shrink-0 transition-[width]`}
-    >
+    <aside className={`flex h-full flex-col bg-brand ${collapsed ? "w-16" : "w-60"} shrink-0 transition-[width]`}>
       <div className={`relative flex items-center justify-center py-5 ${collapsed ? "px-0" : "px-4"}`}>
         <div className={collapsed ? "hidden" : "flex items-center"}>
           <Image src="/icons/logo_blanco.png" alt="Brittany Group" width={124} height={32} />

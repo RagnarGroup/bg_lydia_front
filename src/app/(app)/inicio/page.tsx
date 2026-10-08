@@ -39,10 +39,7 @@ function StatCard({
   }[tone];
 
   return (
-    <div
-      title={hint}
-      className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3.5 py-3"
-    >
+    <div title={hint} className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3.5 py-3">
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${toneClass}`}>
         <Icon name={icon} size={18} />
       </div>
@@ -195,7 +192,9 @@ export default function InicioPage() {
                           <p className="truncate text-ink-soft">{conversation.lastMessagePreview}</p>
                         </div>
                       </div>
-                      <span className="shrink-0 text-xs text-muted">{formatRelativeTime(conversation.lastMessageAt)}</span>
+                      <span className="shrink-0 text-xs text-muted">
+                        {formatRelativeTime(conversation.lastMessageAt)}
+                      </span>
                     </Link>
                   );
                 })
@@ -219,7 +218,9 @@ export default function InicioPage() {
                         <p className="truncate text-ink-soft">{conversation.lastMessagePreview}</p>
                       </div>
                     </div>
-                    <span className="shrink-0 text-xs text-muted">{formatRelativeTime(conversation.lastMessageAt)}</span>
+                    <span className="shrink-0 text-xs text-muted">
+                      {formatRelativeTime(conversation.lastMessageAt)}
+                    </span>
                   </Link>
                 ))}
         </div>

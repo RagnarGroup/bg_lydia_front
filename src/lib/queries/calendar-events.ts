@@ -33,7 +33,14 @@ export function useCreateCalendarEvent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { type: CalendarEvent["type"]; leadId?: string; agentId?: string; startAt: string; endAt: string; note: string }) =>
+    mutationFn: (data: {
+      type: CalendarEvent["type"];
+      leadId?: string;
+      agentId?: string;
+      startAt: string;
+      endAt: string;
+      note: string;
+    }) =>
       fetchJson<{ event: CalendarEvent }>(`/api/lydia/calendar-events`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

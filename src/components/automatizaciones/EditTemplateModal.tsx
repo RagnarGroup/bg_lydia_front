@@ -96,7 +96,10 @@ export function EditTemplateModal({ groupTitle, initial, onClose, onSave }: Prop
         </div>
 
         {error && (
-          <p role="alert" className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+          <p
+            role="alert"
+            className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger"
+          >
             {error}
           </p>
         )}

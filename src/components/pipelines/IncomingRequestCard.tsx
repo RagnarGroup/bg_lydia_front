@@ -28,9 +28,7 @@ export function IncomingRequestCard({ request }: Props) {
             💬 {request.tag}
           </span>
         )}
-        {!request.tag && request.preview && (
-          <p className="mt-1 truncate text-xs text-ink-soft">{request.preview}</p>
-        )}
+        {!request.tag && request.preview && <p className="mt-1 truncate text-xs text-ink-soft">{request.preview}</p>}
       </div>
     </div>
   );

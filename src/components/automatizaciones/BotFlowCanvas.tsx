@@ -43,7 +43,9 @@ const NODE_TYPES = { message: MessageNode, question: QuestionNode };
 const DEFAULT_MESSAGE_HANDLE = "out-bottom";
 
 function newId(): string {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `id-${Date.now()}-${Math.random()}`;
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `id-${Date.now()}-${Math.random()}`;
 }
 
 type BotNode = Node<BotMessageNodeData | BotQuestionNodeData>;
@@ -215,7 +217,10 @@ function CanvasInner() {
           nds.map((n) => {
             if (n.id !== nodeId || n.type !== "question") return n;
             const data = n.data as BotQuestionNodeData;
-            return { ...n, data: { ...data, options: data.options.map((o) => (o.id === optionId ? { ...o, title } : o)) } };
+            return {
+              ...n,
+              data: { ...data, options: data.options.map((o) => (o.id === optionId ? { ...o, title } : o)) },
+            };
           }),
         );
         markDirty();
@@ -270,8 +275,8 @@ function CanvasInner() {
             <h1 className="text-sm font-semibold uppercase tracking-wide text-ink-soft">Bot</h1>
             <p className="mt-1 max-w-xl text-sm text-muted">
               Flujo automatico para numeros de WhatsApp sin conversacion previa. Arrastra desde el punto de un paso
-              hasta otro para conectarlos. Si el cliente escribe texto libre en vez de tocar un boton, el bot se
-              calla y sigue la asesora.
+              hasta otro para conectarlos. Si el cliente escribe texto libre en vez de tocar un boton, el bot se calla y
+              sigue la asesora.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -310,7 +315,10 @@ function CanvasInner() {
           </div>
         )}
         {error && (
-          <p role="alert" className="mx-8 mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+          <p
+            role="alert"
+            className="mx-8 mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger"
+          >
             {error}
           </p>
         )}

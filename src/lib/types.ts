@@ -1,10 +1,5 @@
 export type PipelineStageId =
-  | "contacto_inicial"
-  | "negociacion"
-  | "promesa_pago"
-  | "discusion_contrato"
-  | "matriculado"
-  | "venta_perdida";
+  "contacto_inicial" | "negociacion" | "promesa_pago" | "discusion_contrato" | "matriculado" | "venta_perdida";
 
 export interface PipelineStage {
   id: PipelineStageId;
@@ -12,12 +7,7 @@ export interface PipelineStage {
   color: string; // tailwind bg class
 }
 
-export type ConversationFilter =
-  | "chats_abiertos"
-  | "sin_respuesta"
-  | "asignado_a_mi"
-  | "suscrito"
-  | "destacados";
+export type ConversationFilter = "chats_abiertos" | "sin_respuesta" | "asignado_a_mi" | "suscrito" | "destacados";
 
 export interface Agent {
   id: string;
@@ -96,4 +86,3 @@ export interface CalendarEvent {
   // Opcional/default false para no romper los mocks existentes que no lo seteaban.
   completed?: boolean;
 }
-

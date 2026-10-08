@@ -14,20 +14,13 @@ import {
   useSendReaction,
   useUpdateConversationContact,
 } from "@/lib/queries/conversations";
-import {
-  getMockMessages,
-  mockInboxConversations,
-} from "@/lib/lydia-api/mock-fallback";
+import { getMockMessages, mockInboxConversations } from "@/lib/lydia-api/mock-fallback";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import type { InboxMessage } from "@/lib/lydia-api/inbox-types";
 import { ConversationList } from "./ConversationList";
 import { LeadDetailPanel, type SidePanelView } from "./LeadDetailPanel";
 import { ChatThread } from "./ChatThread";
-import type {
-  ComposerAudioInput,
-  ComposerMediaInput,
-  ComposerQuoted,
-} from "./Composer";
+import type { ComposerAudioInput, ComposerMediaInput, ComposerQuoted } from "./Composer";
 import { Icon } from "@/components/icons";
 import { useNewMessageAlerts } from "@/lib/hooks/useNewMessageAlerts";
 import { requestNotificationPermissionIfNeeded } from "@/lib/notifications";
@@ -39,13 +32,10 @@ function MockModeBanner() {
     <div className="flex items-center gap-2 border-b border-accent/30 bg-accent/10 px-4 py-2 text-xs text-accent-dark">
       <Icon name="ajustes" size={14} className="shrink-0" />
       <span>
-        Viendo datos de ejemplo — la conexión al backend de Lydia está apagada.
-        Poné{" "}
-        <code className="rounded bg-white/50 px-1">
-          NEXT_PUBLIC_LYDIA_API_ENABLED=true
-        </code>{" "}
-        en <code className="rounded bg-white/50 px-1">.env.local</code> junto
-        con las credenciales para conectar el inbox real.
+        Viendo datos de ejemplo — la conexión al backend de Lydia está apagada. Poné{" "}
+        <code className="rounded bg-white/50 px-1">NEXT_PUBLIC_LYDIA_API_ENABLED=true</code> en{" "}
+        <code className="rounded bg-white/50 px-1">.env.local</code> junto con las credenciales para conectar el inbox
+        real.
       </span>
     </div>
   );
@@ -63,18 +53,14 @@ function BackendDownBanner({ error }: { error: Error }) {
       <Icon name="ajustes" size={14} className="shrink-0" />
       <span>
         Estamos actualizando el servicio — esperá un momento y volvé a intentar.
-        {code && (
-          <code className="ml-1.5 rounded bg-white/50 px-1">Error {code}</code>
-        )}
+        {code && <code className="ml-1.5 rounded bg-white/50 px-1">Error {code}</code>}
       </span>
     </div>
   );
 }
 
 export function InboxView() {
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   // LYD-60: mensaje elegido desde la seccion "Mensajes" del buscador -- el
   // hilo hace scroll hasta el y lo resalta. null = abrir el chat normal (abajo).
   const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
@@ -91,21 +77,13 @@ export function InboxView() {
     id: number;
     text: string;
   } | null>(null);
-  const [mockDrafts, setMockDrafts] = useState<Record<string, InboxMessage[]>>(
-    {},
-  );
+  const [mockDrafts, setMockDrafts] = useState<Record<string, InboxMessage[]>>({});
   // LYD-14: en modo mock (o mientras el backend no responde) el override de
   // nombre/telefono se guarda solo en memoria -- no hay Chat real donde
   // persistirlo.
-  const [mockContactOverrides, setMockContactOverrides] = useState<
-    Record<string, { name: string; phone: string }>
-  >({});
+  const [mockContactOverrides, setMockContactOverrides] = useState<Record<string, { name: string; phone: string }>>({});
 
-  const {
-    data: realConversations = [],
-    isLoading,
-    error,
-  } = useConversations("all");
+  const { data: realConversations = [], isLoading, error } = useConversations("all");
   const isMockMode = !LYDIA_API_ENABLED || error !== null;
   const conversations = useMemo(() => {
     const base = isMockMode ? mockInboxConversations : realConversations;
@@ -135,8 +113,7 @@ export function InboxView() {
   // LYD-29: solo se abre el chat que el agente elige. Antes caia a conversations[0], y como abrir un chat con
   // mensajes sin leer lo marca como leido (LYD-13), entrar al inbox marcaba la primera conversacion como leida
   // sin que nadie la viera.
-  const selectedConversation =
-    conversations.find((c) => c.id === selectedConversationId) ?? null;
+  const selectedConversation = conversations.find((c) => c.id === selectedConversationId) ?? null;
 
   const {
     data: realMessages = [],
@@ -161,9 +138,7 @@ export function InboxView() {
   const [olderMessages, setOlderMessages] = useState<InboxMessage[]>([]);
   const [nextOlderPage, setNextOlderPage] = useState(2); // la pagina 1 ya la trae useMessages
   const [hasMoreOlder, setHasMoreOlder] = useState(true);
-  const [olderMessagesKey, setOlderMessagesKey] = useState(
-    selectedConversationId,
-  );
+  const [olderMessagesKey, setOlderMessagesKey] = useState(selectedConversationId);
   if (olderMessagesKey !== selectedConversationId) {
     setOlderMessagesKey(selectedConversationId);
     setOlderMessages([]);
@@ -173,8 +148,7 @@ export function InboxView() {
 
   const handleLoadOlder = async () => {
     if (isMockMode || selectedConversationId === null) return;
-    const { messages, hasMore } =
-      await loadOlderMessages.mutateAsync(nextOlderPage);
+    const { messages, hasMore } = await loadOlderMessages.mutateAsync(nextOlderPage);
     setOlderMessages((prev) => [...messages, ...prev]);
     setNextOlderPage((p) => p + 1);
     setHasMoreOlder(hasMore);
@@ -214,10 +188,7 @@ export function InboxView() {
     () =>
       selectedConversationId === null
         ? []
-        : [
-            ...getMockMessages(selectedConversationId),
-            ...(mockDrafts[selectedConversationId] ?? []),
-          ],
+        : [...getMockMessages(selectedConversationId), ...(mockDrafts[selectedConversationId] ?? [])],
     [selectedConversationId, mockDrafts],
   );
 
@@ -242,10 +213,7 @@ export function InboxView() {
     };
     setMockDrafts((prev) => ({
       ...prev,
-      [selectedConversationId]: [
-        ...(prev[selectedConversationId] ?? []),
-        draft,
-      ],
+      [selectedConversationId]: [...(prev[selectedConversationId] ?? []), draft],
     }));
   };
 
@@ -270,10 +238,7 @@ export function InboxView() {
     };
     setMockDrafts((prev) => ({
       ...prev,
-      [selectedConversationId]: [
-        ...(prev[selectedConversationId] ?? []),
-        draft,
-      ],
+      [selectedConversationId]: [...(prev[selectedConversationId] ?? []), draft],
     }));
   };
 
@@ -298,10 +263,7 @@ export function InboxView() {
     };
     setMockDrafts((prev) => ({
       ...prev,
-      [selectedConversationId]: [
-        ...(prev[selectedConversationId] ?? []),
-        draft,
-      ],
+      [selectedConversationId]: [...(prev[selectedConversationId] ?? []), draft],
     }));
   };
 
@@ -313,10 +275,7 @@ export function InboxView() {
     sendReaction.mutate({ key: message.raw.key, reaction: emoji });
   };
 
-  const handleForward = (
-    message: InboxMessage,
-    targetConversationId: string,
-  ) => {
+  const handleForward = (message: InboxMessage, targetConversationId: string) => {
     if (isMockMode) return;
     if (message.media) {
       // El adjunto original ya se resolvio a base64 al pintarse (LYD-15,
@@ -341,8 +300,7 @@ export function InboxView() {
               mediatype:
                 message.media!.kind === "sticker"
                   ? "image"
-                  : (message.media!.kind as
-                      "image" | "document" | "video" | "audio"),
+                  : (message.media!.kind as "image" | "document" | "video" | "audio"),
               media: base64,
               mimetype: message.media!.mimetype,
               fileName: message.media!.fileName,
@@ -357,16 +315,9 @@ export function InboxView() {
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-hidden bg-bg text-ink">
-      {isMockMode &&
-        (!LYDIA_API_ENABLED ? (
-          <MockModeBanner />
-        ) : (
-          error && <BackendDownBanner error={error} />
-        ))}
+      {isMockMode && (!LYDIA_API_ENABLED ? <MockModeBanner /> : error && <BackendDownBanner error={error} />)}
       <div className="flex flex-1 overflow-hidden">
-        <div
-          className={`${mobileView === "list" ? "flex" : "hidden"} w-full shrink-0 md:flex md:w-auto`}
-        >
+        <div className={`${mobileView === "list" ? "flex" : "hidden"} w-full shrink-0 md:flex md:w-auto`}>
           <ConversationList
             conversations={conversations}
             isLoading={isMockMode ? false : isLoading}
@@ -396,29 +347,16 @@ export function InboxView() {
                 view={sidePanelView}
                 onViewChange={setSidePanelView}
                 agentRequestId={agentRequestId}
-                onUseSuggestion={(text) =>
-                  setInjectedText({ id: Date.now(), text })
-                }
+                onUseSuggestion={(text) => setInjectedText({ id: Date.now(), text })}
               />
             </div>
-            <div
-              className={`${mobileView === "thread" ? "flex" : "hidden"} w-full flex-1 md:flex`}
-            >
+            <div className={`${mobileView === "thread" ? "flex" : "hidden"} w-full flex-1 md:flex`}>
               <ChatThread
                 conversation={selectedConversation}
-                thread={
-                  isMockMode
-                    ? mockMessages
-                    : [...olderMessages, ...realMessages]
-                }
+                thread={isMockMode ? mockMessages : [...olderMessages, ...realMessages]}
                 isLoading={isMockMode ? false : realMessagesLoading}
                 error={isMockMode ? null : realMessagesError}
-                sending={
-                  !isMockMode &&
-                  (sendMessage.isPending ||
-                    sendMedia.isPending ||
-                    sendAudio.isPending)
-                }
+                sending={!isMockMode && (sendMessage.isPending || sendMedia.isPending || sendAudio.isPending)}
                 onSend={handleSend}
                 onSendMedia={handleSendMedia}
                 onSendAudio={handleSendAudio}
@@ -427,11 +365,7 @@ export function InboxView() {
                 onEditContact={handleEditContact}
                 onLoadOlder={handleLoadOlder}
                 loadingOlder={loadOlderMessages.isPending}
-                hasMoreOlder={
-                  !isMockMode &&
-                  hasMoreOlder &&
-                  olderMessages.length + realMessages.length >= 100
-                }
+                hasMoreOlder={!isMockMode && hasMoreOlder && olderMessages.length + realMessages.length >= 100}
                 focusMessageId={focusMessageId}
                 onBack={() => setMobileView("list")}
                 onAskAgent={() => {

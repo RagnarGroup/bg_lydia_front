@@ -42,7 +42,9 @@ export async function POST(request: Request) {
     name: agent.name,
     role: agent.role,
   });
-  const response = NextResponse.json({ agent: { id: agent.id, email: agent.email, name: agent.name, role: agent.role } });
+  const response = NextResponse.json({
+    agent: { id: agent.id, email: agent.email, name: agent.name, role: agent.role },
+  });
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

@@ -13,11 +13,7 @@ import {
   useUpdateAgentKnowledge,
   type AgentKnowledgeInput,
 } from "@/lib/queries/agent";
-import {
-  AGENT_KNOWLEDGE_CATEGORIES,
-  type AgentKnowledgeCategory,
-  type EvoAgentKnowledge,
-} from "@/lib/lydia-api/types";
+import { AGENT_KNOWLEDGE_CATEGORIES, type AgentKnowledgeCategory, type EvoAgentKnowledge } from "@/lib/lydia-api/types";
 
 const CATEGORY_LABELS: Record<AgentKnowledgeCategory, string> = {
   programas: "Programas",
@@ -29,8 +25,7 @@ const CATEGORY_LABELS: Record<AgentKnowledgeCategory, string> = {
   otro: "Otro",
 };
 
-const inputClass =
-  "w-full rounded-md border border-line px-2.5 py-2 text-sm focus:border-brand focus:outline-none";
+const inputClass = "w-full rounded-md border border-line px-2.5 py-2 text-sm focus:border-brand focus:outline-none";
 
 // LYD-69: seccion "Agente" -- conocimiento editable, instrucciones y prueba de
 // la sugerencia de respuesta con IA. Solo para administradores (el chequeo real
@@ -41,9 +36,7 @@ export function AgentePanel() {
   if (agent && agent.role !== "administrador") {
     return (
       <section className="flex h-full flex-1 items-center justify-center bg-bg px-8">
-        <p className="text-sm text-muted">
-          Esta sección es solo para administradores.
-        </p>
+        <p className="text-sm text-muted">Esta sección es solo para administradores.</p>
       </section>
     );
   }
@@ -60,9 +53,7 @@ export function AgentePanel() {
 function SectionTitle({ title, hint }: { title: string; hint?: string }) {
   return (
     <div>
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-soft">
-        {title}
-      </h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-soft">{title}</h2>
       {hint && <p className="mt-0.5 text-xs text-muted">{hint}</p>}
     </div>
   );
@@ -70,10 +61,7 @@ function SectionTitle({ title, hint }: { title: string; hint?: string }) {
 
 function ErrorBox({ message }: { message: string }) {
   return (
-    <p
-      role="alert"
-      className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger"
-    >
+    <p role="alert" className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
       {message}
     </p>
   );
@@ -83,9 +71,7 @@ function KnowledgeSection() {
   const { data: entries = [], isLoading, error } = useAgentKnowledge();
   const update = useUpdateAgentKnowledge();
   const remove = useDeleteAgentKnowledge();
-  const [editing, setEditing] = useState<EvoAgentKnowledge | "new" | null>(
-    null,
-  );
+  const [editing, setEditing] = useState<EvoAgentKnowledge | "new" | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   return (
@@ -106,12 +92,7 @@ function KnowledgeSection() {
 
       {error && <ErrorBox message={error.message} />}
       {(update.isError || remove.isError) && (
-        <ErrorBox
-          message={
-            (update.error ?? remove.error)?.message ??
-            "No se pudo completar la acción"
-          }
-        />
+        <ErrorBox message={(update.error ?? remove.error)?.message ?? "No se pudo completar la acción"} />
       )}
 
       <div className="overflow-x-auto rounded-lg border border-line bg-surface">
@@ -128,12 +109,8 @@ function KnowledgeSection() {
           <tbody>
             {!isLoading && entries.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="border-b border-line-soft py-6 text-center text-sm text-muted"
-                >
-                  Todavía no hay entradas. Mientras tanto, la IA usa las
-                  plantillas de chat y la conversación abierta.
+                <td colSpan={5} className="border-b border-line-soft py-6 text-center text-sm text-muted">
+                  Todavía no hay entradas. Mientras tanto, la IA usa las plantillas de chat y la conversación abierta.
                 </td>
               </tr>
             )}
@@ -144,18 +121,12 @@ function KnowledgeSection() {
                     type="checkbox"
                     checked={entry.active}
                     disabled={update.isPending}
-                    onChange={(e) =>
-                      update.mutate({ id: entry.id, active: e.target.checked })
-                    }
-                    aria-label={
-                      entry.active ? "Desactivar entrada" : "Activar entrada"
-                    }
+                    onChange={(e) => update.mutate({ id: entry.id, active: e.target.checked })}
+                    aria-label={entry.active ? "Desactivar entrada" : "Activar entrada"}
                     className="accent-brand"
                   />
                 </td>
-                <td className="border-b border-line-soft py-2.5 pr-4 font-medium text-ink-soft">
-                  {entry.title}
-                </td>
+                <td className="border-b border-line-soft py-2.5 pr-4 font-medium text-ink-soft">{entry.title}</td>
                 <td className="border-b border-line-soft py-2.5 pr-4">
                   <span className="rounded-md bg-bg-subtle px-2 py-0.5 text-xs font-medium text-muted">
                     {CATEGORY_LABELS[entry.category] ?? entry.category}
@@ -190,11 +161,7 @@ function KnowledgeSection() {
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-3 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setEditing(entry)}
-                        className="text-brand hover:underline"
-                      >
+                      <button type="button" onClick={() => setEditing(entry)} className="text-brand hover:underline">
                         Editar
                       </button>
                       <button
@@ -213,29 +180,16 @@ function KnowledgeSection() {
         </table>
       </div>
 
-      {editing && (
-        <KnowledgeModal
-          entry={editing === "new" ? null : editing}
-          onClose={() => setEditing(null)}
-        />
-      )}
+      {editing && <KnowledgeModal entry={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }
 
-function KnowledgeModal({
-  entry,
-  onClose,
-}: {
-  entry: EvoAgentKnowledge | null;
-  onClose: () => void;
-}) {
+function KnowledgeModal({ entry, onClose }: { entry: EvoAgentKnowledge | null; onClose: () => void }) {
   const create = useCreateAgentKnowledge();
   const update = useUpdateAgentKnowledge();
   const [title, setTitle] = useState(entry?.title ?? "");
-  const [category, setCategory] = useState<AgentKnowledgeCategory>(
-    entry?.category ?? "programas",
-  );
+  const [category, setCategory] = useState<AgentKnowledgeCategory>(entry?.category ?? "programas");
   const [content, setContent] = useState(entry?.content ?? "");
   const [active, setActive] = useState(entry?.active ?? true);
   const [error, setError] = useState<string | null>(null);
@@ -260,20 +214,13 @@ function KnowledgeModal({
       else await create.mutateAsync(data);
       onClose();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "No se pudo guardar la entrada",
-      );
+      setError(err instanceof Error ? err.message : "No se pudo guardar la entrada");
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-      <button
-        type="button"
-        aria-label="Cerrar"
-        onClick={onClose}
-        className="absolute inset-0 cursor-default"
-      />
+      <button type="button" aria-label="Cerrar" onClick={onClose} className="absolute inset-0 cursor-default" />
       <form
         onSubmit={handleSubmit}
         role="dialog"
@@ -281,18 +228,13 @@ function KnowledgeModal({
         aria-labelledby="knowledge-modal-title"
         className="relative w-full max-w-lg rounded-xl bg-surface p-5 shadow-xl"
       >
-        <h2
-          id="knowledge-modal-title"
-          className="text-base font-semibold text-ink"
-        >
+        <h2 id="knowledge-modal-title" className="text-base font-semibold text-ink">
           {entry ? "Editar entrada" : "Nueva entrada de conocimiento"}
         </h2>
 
         <div className="mt-4 flex flex-col gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-soft">
-              Título *
-            </label>
+            <label className="mb-1 block text-xs font-medium text-ink-soft">Título *</label>
             <input
               autoFocus
               value={title}
@@ -304,14 +246,10 @@ function KnowledgeModal({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-soft">
-              Categoría *
-            </label>
+            <label className="mb-1 block text-xs font-medium text-ink-soft">Categoría *</label>
             <select
               value={category}
-              onChange={(e) =>
-                setCategory(e.target.value as AgentKnowledgeCategory)
-              }
+              onChange={(e) => setCategory(e.target.value as AgentKnowledgeCategory)}
               className={inputClass}
             >
               {AGENT_KNOWLEDGE_CATEGORIES.map((c) => (
@@ -322,9 +260,7 @@ function KnowledgeModal({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-ink-soft">
-              Contenido *
-            </label>
+            <label className="mb-1 block text-xs font-medium text-ink-soft">Contenido *</label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
