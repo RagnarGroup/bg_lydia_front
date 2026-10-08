@@ -32,6 +32,8 @@ interface Props {
   injectedText?: { id: number; text: string } | null;
 }
 
+const isSticker = (message: InboxMessage) => message.media?.kind === "sticker";
+
 // LYD-60: tope de paginas de historial (100 mensajes c/u, LYD-17) que se
 // cargan solas buscando el mensaje elegido en el buscador, para no quedarse
 // pidiendo historial sin fin si el mensaje no aparece (ej. borrado).
@@ -215,8 +217,9 @@ export function ChatThread({
                 <span className="rounded-full bg-surface px-3 py-1 text-xs text-muted shadow-sm">{group.day}</span>
               </div>
               {/* LYD-76: como en WhatsApp, los mensajes seguidos de la misma
-                  persona van casi pegados; el aire extra va solo cuando
-                  cambia quien escribe. */}
+                  persona van casi pegados; el aire extra va cuando cambia
+                  quien escribe y alrededor de los stickers (no tienen
+                  burbuja, pegados al texto se confunden con el mensaje). */}
               <div className="flex flex-col gap-0.5">
                 {group.messages.map((message, i) => {
                   const prev = group.messages[i - 1];
@@ -226,7 +229,7 @@ export function ChatThread({
                     <div
                       key={message.id}
                       data-message-id={message.id}
-                      className={`rounded-2xl transition-colors duration-700 ${isGroupStart && i > 0 ? "mt-2" : ""}`}
+                      className={`rounded-2xl transition-colors duration-700 ${i > 0 && (isGroupStart || isSticker(prev) || isSticker(message)) ? "mt-2" : ""}`}
                     >
                       <MessageBubble
                         message={message}
