@@ -72,7 +72,10 @@ export function InboxView() {
   // de sugerencia desde el foco del composer y texto elegido en el chat del
   // agente para pasarlo al composer.
   const [sidePanelView, setSidePanelView] = useState<SidePanelView>("detalle");
-  const [agentRequestId, setAgentRequestId] = useState(0);
+  // El pedido queda atado al chat donde se pulso el foco y se borra al
+  // cambiar de chat: si no, el panel del agente (que se vuelve a montar con
+  // cada chat) lo tomaba como pedido nuevo y consultaba a la IA solo.
+  const [agentRequest, setAgentRequest] = useState<{ id: number; conversationId: string } | null>(null);
   const [injectedText, setInjectedText] = useState<{
     id: number;
     text: string;
@@ -325,6 +328,7 @@ export function InboxView() {
             selectedConversationId={selectedConversationId}
             onSelect={(id) => {
               setSelectedConversationId(id);
+              setAgentRequest(null);
               setFocusMessageId(null);
               setMobileView("thread");
             }}
@@ -332,6 +336,7 @@ export function InboxView() {
             messageSearchEnabled={!isMockMode}
             onSelectMessage={(conversationId, messageId) => {
               setSelectedConversationId(conversationId);
+              setAgentRequest(null);
               setFocusMessageId(messageId);
               setMobileView("thread");
             }}
@@ -346,7 +351,7 @@ export function InboxView() {
                 conversation={selectedConversation}
                 view={sidePanelView}
                 onViewChange={setSidePanelView}
-                agentRequestId={agentRequestId}
+                agentRequestId={agentRequest?.conversationId === selectedConversation.id ? agentRequest.id : 0}
                 onUseSuggestion={(text) => setInjectedText({ id: Date.now(), text })}
               />
             </div>
@@ -370,7 +375,7 @@ export function InboxView() {
                 onBack={() => setMobileView("list")}
                 onAskAgent={() => {
                   setSidePanelView("agente");
-                  setAgentRequestId((n) => n + 1);
+                  setAgentRequest({ id: Date.now(), conversationId: selectedConversation.id });
                 }}
                 injectedText={injectedText}
               />
