@@ -104,4 +104,18 @@ export interface InboxConversation {
   lastMessageAt: string; // ISO
   unreadCount: number;
   inboxChannel: InboxChannel;
+  // LYD-74: etiquetas del agente IA por grupo (ver TAG_GROUPS en AgentAssistantPanel).
+  agentTags?: Record<string, string>;
+}
+
+// LYD-74: una linea del chat de la asesora con el agente IA.
+export interface AgentChatLine {
+  role: "asesora" | "ia";
+  text: string;
+}
+
+export interface AgentChatResult {
+  reply: string;
+  suggestion: string | null;
+  tags: Record<string, string>;
 }

@@ -54,6 +54,8 @@ export interface EvoConversation {
   // tiene una unica instancia fija.
   instanceName: string;
   integration: string;
+  // LYD-74: etiquetas del agente IA ({ intencion, decisor, accion, fuente }).
+  agentTags?: Record<string, string> | null;
 }
 
 // LYD-60: GET /crm/conversations/search?q= -- mensajes cuyo texto/caption

@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
+  AgentChatLine,
+  AgentChatResult,
   InboxAgent,
   InboxConversation,
   InboxMessage,
@@ -176,6 +178,40 @@ export function useSuggestReply() {
   return useMutation({
     mutationFn: (conversationId: string) =>
       fetchJson<{ suggestion: string }>(`/api/lydia/conversations/${conversationId}/suggest`, { method: "POST" }),
+  });
+}
+
+// LYD-74: chat con el agente IA. El back guarda las etiquetas que detecta,
+// asi que se refresca la lista para que el resto del inbox las vea.
+export function useAgentChat() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ conversationId, messages }: { conversationId: string; messages: AgentChatLine[] }) =>
+      fetchJson<AgentChatResult>(`/api/lydia/conversations/${conversationId}/agent-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+}
+
+export function useUpdateAgentTags() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ conversationId, tags }: { conversationId: string; tags: Record<string, string | null> }) =>
+      fetchJson<{ conversation: InboxConversation }>(`/api/lydia/conversations/${conversationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentTags: tags }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
   });
 }
 
