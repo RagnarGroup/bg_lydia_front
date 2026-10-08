@@ -1,17 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { InboxChannel, InboxConversation } from "@/lib/lydia-api/inbox-types";
 import { CHANNEL_FILTERS } from "@/lib/lydia-api/channel";
 import { ConversationListItem } from "./ConversationListItem";
 import { MessageSearchResultItem } from "./MessageSearchResultItem";
 import { useEscapeKey } from "@/lib/hooks/useEscapeKey";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
-import { useMessageSearch } from "@/lib/queries/conversations";
+import { useAgents, useMessageSearch } from "@/lib/queries/conversations";
 import { contactMatches } from "@/lib/highlight";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 type StatusFilter = "todos" | "abierto" | "sin_respuesta" | "cerrado";
 type ChannelFilter = InboxChannel | "todos";
+// LYD-77: filtro por responsable -- "mios" es la asesora logueada; un id de
+// agente filtra por esa asesora puntual.
+type OwnerFilter = string;
 
 const filters: { id: StatusFilter; label: string }[] = [
   { id: "todos", label: "Todos" },
@@ -64,16 +68,43 @@ export function ConversationList({
   const [channelMenuOpen, setChannelMenuOpen] = useState(false);
   useEscapeKey(filterMenuOpen, () => setFilterMenuOpen(false));
   useEscapeKey(channelMenuOpen, () => setChannelMenuOpen(false));
+  const [activeOwner, setActiveOwner] = useState<OwnerFilter>("todas");
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  useEscapeKey(ownerMenuOpen, () => setOwnerMenuOpen(false));
+
+  const { agent: currentAgent } = useAuth();
+  const { data: agents = [] } = useAgents();
+  const ownerFilters = useMemo(
+    () => [
+      { id: "todas", label: "Todas las asesoras" },
+      { id: "mios", label: "Mis chats" },
+      { id: "sin_asignar", label: "Sin asignar" },
+      ...agents.filter((a) => a.id !== currentAgent?.id).map((a) => ({ id: a.id, label: a.name })),
+    ],
+    [agents, currentAgent?.id],
+  );
+
+  const matchesOwner = useCallback(
+    (conversation: InboxConversation) => {
+      const assigneeId = conversation.assignee?.id ?? null;
+      if (activeOwner === "todas") return true;
+      if (activeOwner === "sin_asignar") return assigneeId === null;
+      if (activeOwner === "mios") return assigneeId !== null && assigneeId === currentAgent?.id;
+      return assigneeId === activeOwner;
+    },
+    [activeOwner, currentAgent?.id],
+  );
 
   const filtered = useMemo(() => {
     return conversations.filter((conversation) => {
       // LYD-60: nombre o telefono (por digitos), como la seccion "Contactos" de WhatsApp.
       if (query && !contactMatches(query, conversation.contact.name, conversation.contact.phone)) return false;
       if (activeChannel !== "todos" && conversation.inboxChannel !== activeChannel) return false;
+      if (!matchesOwner(conversation)) return false;
       if (activeFilter === "todos") return true;
       return conversation.status === activeFilter;
     });
-  }, [conversations, query, activeFilter, activeChannel]);
+  }, [conversations, query, activeFilter, activeChannel, matchesOwner]);
 
   // LYD-60: los resultados de mensajes respetan el filtro de canal y de
   // estado igual que la lista -- si no, un click abriria un chat que no esta
@@ -85,9 +116,19 @@ export function ConversationList({
       if (activeChannel !== "todos" && hit.inboxChannel !== activeChannel) return false;
       const conversation = conversationById.get(hit.conversationId);
       if (!conversation) return false; // p.ej. archivada o todavia no cargada en la lista
+      if (!matchesOwner(conversation)) return false;
       return activeFilter === "todos" || conversation.status === activeFilter;
     });
-  }, [isSearching, debouncedQuery, query, messageSearch.data, activeChannel, activeFilter, conversationById]);
+  }, [
+    isSearching,
+    debouncedQuery,
+    query,
+    messageSearch.data,
+    activeChannel,
+    activeFilter,
+    conversationById,
+    matchesOwner,
+  ]);
 
   return (
     <section className="flex h-full w-full shrink-0 flex-col border-r border-line bg-surface md:w-96">
@@ -199,6 +240,55 @@ export function ConversationList({
                     }}
                     className={`block w-full px-3 py-1.5 text-left hover:bg-bg-subtle ${
                       filter.id === activeChannel ? "font-semibold text-brand" : "text-ink-soft"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* LYD-77: filtro por responsable, mismo patron que el de estado y canal. */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setOwnerMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={ownerMenuOpen}
+              className="flex max-w-36 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-ink-soft hover:bg-bg-subtle"
+            >
+              <span className="truncate">
+                {ownerFilters.find((f) => f.id === activeOwner)?.label ?? "Todas las asesoras"}
+              </span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="shrink-0"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {ownerMenuOpen && (
+              <div
+                role="menu"
+                className="scroll-slim absolute left-0 z-10 mt-1 max-h-72 w-56 overflow-y-auto rounded-md border border-line bg-surface py-1 text-sm shadow-lg"
+              >
+                {ownerFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setActiveOwner(filter.id);
+                      setOwnerMenuOpen(false);
+                    }}
+                    className={`block w-full truncate px-3 py-1.5 text-left hover:bg-bg-subtle ${
+                      filter.id === activeOwner ? "font-semibold text-brand" : "text-ink-soft"
                     }`}
                   >
                     {filter.label}

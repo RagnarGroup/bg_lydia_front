@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getConversation, listMessages, sendMessage } from "@/lib/lydia-api/client";
 import { adaptMessage } from "@/lib/lydia-api/adapters";
+import { autoAssignToSender } from "@/lib/lydia-api/auto-assign";
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Error desconocido";
@@ -40,6 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const conversation = await getConversation(id);
     await sendMessage(conversation.remoteJid, conversation.instanceName, content, quoted);
+    await autoAssignToSender(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return errorResponse(error);

@@ -236,6 +236,14 @@ export async function assignConversation(chatId: string, assignedAgentId: string
   });
 }
 
+// LYD-77: asigna el chat solo si todavia no tiene responsable (ver auto-assign.ts).
+export async function claimConversation(chatId: string, agentId: string): Promise<EvoConversation> {
+  return evoFetch<EvoConversation>(`/crm/conversations/${chatId}/claim`, {
+    method: "POST",
+    body: JSON.stringify({ agentId }),
+  });
+}
+
 // LYD-13: abrir una conversacion la marca como leida (Chat.unreadMessages de
 // Evolution API, nunca reseteado hasta ahora). El backend solo permite
 // setearlo a 0 (ver crm.service.ts), no es un PATCH generico.

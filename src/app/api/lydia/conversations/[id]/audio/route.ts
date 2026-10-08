@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getConversation, sendAudio } from "@/lib/lydia-api/client";
+import { autoAssignToSender } from "@/lib/lydia-api/auto-assign";
 
 // LYD-53: nota de voz grabada en el navegador (base64 inline, mismo patron
 // que media/route.ts). El `quoted` opcional viene del reply activo en el
@@ -16,6 +17,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const conversation = await getConversation(id);
     await sendAudio(conversation.remoteJid, conversation.instanceName, audio, body.quoted ?? undefined);
+    await autoAssignToSender(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error desconocido";
