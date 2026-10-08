@@ -1,22 +1,60 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { pipelineStages } from "@/lib/mock-data";
-import type { PipelineStageId } from "@/lib/types";
 import { Icon } from "@/components/icons";
 import { useSuggestReply } from "@/lib/queries/conversations";
 
-// LYD-73: etiquetas de intencion del playbook comercial. Por ahora viven
-// solo en memoria (se pierden al cambiar de chat); persistirlas y que la IA
-// las marque sola va con la logica del agente.
-const INTENT_TAGS = [
-  "Frío",
-  "Interesado",
-  "Alta intención",
-  "Objeción",
-  "Postergado",
-  "Habla con decisor",
+// LYD-73: etiquetas del playbook comercial, una por categoria. Por ahora
+// viven solo en memoria (se pierden al cambiar de chat); persistirlas y que la
+// IA las elija sola va con la logica del agente.
+const TAG_GROUPS = [
+  {
+    id: "intencion",
+    label: "Intención",
+    options: [
+      "Frío",
+      "Interesado",
+      "Alta intención",
+      "Objeción",
+      "Postergado",
+      "Cerrado",
+      "Perdido",
+    ],
+  },
+  {
+    id: "decisor",
+    label: "Habla con",
+    options: ["Alumno", "Mamá", "Papá", "Esposo/a", "Tercero"],
+  },
+  {
+    id: "accion",
+    label: "Siguiente acción",
+    options: [
+      "Visita",
+      "Llamada",
+      "Horario",
+      "Evaluación",
+      "Matrícula",
+      "Pago",
+      "Follow-up",
+    ],
+  },
+  {
+    id: "fuente",
+    label: "Fuente",
+    options: [
+      "Meta",
+      "TikTok",
+      "Volanteo",
+      "Banner",
+      "Referido",
+      "Walk-in",
+      "Otro",
+    ],
+  },
 ] as const;
+
+type TagGroupId = (typeof TAG_GROUPS)[number]["id"];
 
 type ChatItem =
   | { id: number; role: "asesora"; text: string }
@@ -30,9 +68,6 @@ type NewChatItem = ChatItem extends infer T
 
 interface Props {
   conversationId: string;
-  stage: PipelineStageId;
-  onStageChange: (stage: PipelineStageId) => void;
-  stageDisabled: boolean;
   // Cambia cada vez que la asesora pulsa el foco del composer: pide una
   // sugerencia nueva sin escribir indicaciones.
   requestId: number;
@@ -41,13 +76,10 @@ interface Props {
 
 export function AgentAssistantPanel({
   conversationId,
-  stage,
-  onStageChange,
-  stageDisabled,
   requestId,
   onUseSuggestion,
 }: Props) {
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<Partial<Record<TagGroupId, string>>>({});
   const [items, setItems] = useState<ChatItem[]>([]);
   const [draft, setDraft] = useState("");
   const nextId = useRef(1);
@@ -92,56 +124,37 @@ export function AgentAssistantPanel({
     bottomRef.current?.scrollIntoView({ block: "end" });
   }, [items.length, suggestReply.isPending]);
 
-  const toggleTag = (tag: string) =>
-    setTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    );
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0">
         <p className="mb-1.5 text-xs font-medium text-muted">Etiquetas</p>
-        <div className="flex flex-wrap gap-1.5">
-          {INTENT_TAGS.map((tag) => {
-            const active = tags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => toggleTag(tag)}
-                className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
-                  active
-                    ? "border-brand bg-brand text-white"
-                    : "border-line text-ink-soft hover:border-brand/50 hover:text-brand"
+        <div className="grid grid-cols-2 gap-2">
+          {TAG_GROUPS.map((group) => (
+            <label key={group.id} className="block">
+              <span className="mb-0.5 block text-[11px] text-muted">
+                {group.label}
+              </span>
+              <select
+                value={tags[group.id] ?? ""}
+                onChange={(e) =>
+                  setTags((prev) => ({
+                    ...prev,
+                    [group.id]: e.target.value || undefined,
+                  }))
+                }
+                className={`w-full rounded-md border border-line px-2 py-1.5 text-xs focus:border-brand focus:outline-none ${
+                  tags[group.id] ? "font-medium text-ink" : "text-muted"
                 }`}
               >
-                {tag}
-              </button>
-            );
-          })}
-        </div>
-
-        <p className="mb-1.5 mt-4 text-xs font-medium text-muted">Cajón</p>
-        <div className="flex flex-wrap gap-1.5">
-          {pipelineStages.map((s) => {
-            const active = s.id === stage;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                disabled={stageDisabled}
-                onClick={() => onStageChange(s.id)}
-                className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                  active
-                    ? "border-ink-soft bg-bg-subtle font-semibold text-ink"
-                    : "border-line text-ink-soft hover:bg-bg-subtle"
-                }`}
-              >
-                <span className={`h-2 w-2 rounded-full ${s.color}`} />
-                {s.label}
-              </button>
-            );
-          })}
+                <option value="">Sin definir</option>
+                {group.options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
         </div>
       </div>
 
