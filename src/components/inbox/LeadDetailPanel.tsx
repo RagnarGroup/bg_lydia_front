@@ -38,26 +38,17 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="flex items-center justify-between gap-2 py-1.5 text-sm">
       <span className="text-muted">{label}</span>
-      <span className="truncate text-ink-soft">
-        {value?.trim() ? value : "..."}
-      </span>
+      <span className="truncate text-ink-soft">{value?.trim() ? value : "..."}</span>
     </div>
   );
 }
 
-export function LeadDetailPanel({
-  conversation,
-  view,
-  onViewChange,
-  agentRequestId,
-  onUseSuggestion,
-}: Props) {
+export function LeadDetailPanel({ conversation, view, onViewChange, agentRequestId, onUseSuggestion }: Props) {
   const { contact, assignee } = conversation;
 
   const { data: agents = [] } = useAgents();
   const assignAgent = useAssignAgent(conversation.id);
-  const canUseBackend =
-    LYDIA_API_ENABLED && conversation.remoteJid !== undefined;
+  const canUseBackend = LYDIA_API_ENABLED && conversation.remoteJid !== undefined;
   const canReassign = canUseBackend;
 
   // LYD-20: "Estado lead" y "Presupuesto" antes eran controles decorativos
@@ -72,8 +63,7 @@ export function LeadDetailPanel({
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
 
-  const [draftStage, setDraftStage] =
-    useState<PipelineStageId>("contacto_inicial");
+  const [draftStage, setDraftStage] = useState<PipelineStageId>("contacto_inicial");
   const [draftBudget, setDraftBudget] = useState("");
   const [syncedFromLead, setSyncedFromLead] = useState(false);
 
@@ -88,10 +78,7 @@ export function LeadDetailPanel({
   const stageIndex = pipelineStages.findIndex((s) => s.id === draftStage);
   const isSavingLead = createLead.isPending || updateLead.isPending;
 
-  const persistLead = (patch: {
-    stage?: PipelineStageId;
-    budgetAmount?: number;
-  }) => {
+  const persistLead = (patch: { stage?: PipelineStageId; budgetAmount?: number }) => {
     if (!canUseBackend) return;
     if (lead) {
       updateLead.mutate({ id: lead.id, data: patch });
@@ -120,10 +107,7 @@ export function LeadDetailPanel({
 
   return (
     <section className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface p-4">
-      <div
-        role="tablist"
-        className="flex shrink-0 rounded-lg bg-bg-subtle p-0.5"
-      >
+      <div role="tablist" className="flex shrink-0 rounded-lg bg-bg-subtle p-0.5">
         {VIEWS.map((v) => (
           <button
             key={v.id}
@@ -132,9 +116,7 @@ export function LeadDetailPanel({
             aria-selected={view === v.id}
             onClick={() => onViewChange(v.id)}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-              view === v.id
-                ? "bg-surface text-brand shadow-sm"
-                : "text-muted hover:text-ink-soft"
+              view === v.id ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-ink-soft"
             }`}
           >
             <Icon name={v.icon} size={14} />
@@ -164,20 +146,14 @@ export function LeadDetailPanel({
             />
             {CHANNEL_META[conversation.inboxChannel].label}
           </p>
-          <p className="text-xs text-muted">
-            Canal por donde llegó la conversación
-          </p>
+          <p className="text-xs text-muted">Canal por donde llegó la conversación</p>
 
           <div className="mt-4">
-            <label className="mb-1 block text-xs font-medium text-muted">
-              Estado lead
-            </label>
+            <label className="mb-1 block text-xs font-medium text-muted">Estado lead</label>
             <select
               value={draftStage}
               disabled={!canUseBackend || isSavingLead}
-              onChange={(e) =>
-                handleStageChange(e.target.value as PipelineStageId)
-              }
+              onChange={(e) => handleStageChange(e.target.value as PipelineStageId)}
               className="w-full rounded-md border border-line px-2.5 py-2 text-sm text-ink-soft focus:border-brand focus:outline-none"
             >
               {pipelineStages.map((s) => (
@@ -191,23 +167,15 @@ export function LeadDetailPanel({
               {pipelineStages.map((s, i) => (
                 <div
                   key={s.id}
-                  className={`h-full flex-1 ${i <= stageIndex ? s.color : "bg-bg-subtle"} ${
-                    i > 0 ? "ml-0.5" : ""
-                  }`}
+                  className={`h-full flex-1 ${i <= stageIndex ? s.color : "bg-bg-subtle"} ${i > 0 ? "ml-0.5" : ""}`}
                 />
               ))}
             </div>
-            {!canUseBackend && (
-              <p className="mt-1 text-[11px] text-muted">
-                Solo se guarda con el backend conectado.
-              </p>
-            )}
+            {!canUseBackend && <p className="mt-1 text-[11px] text-muted">Solo se guarda con el backend conectado.</p>}
           </div>
 
           <div className="mt-4 border-t border-line-soft pt-3">
-            <label className="mb-1 block text-xs font-medium text-muted">
-              Presupuesto
-            </label>
+            <label className="mb-1 block text-xs font-medium text-muted">Presupuesto</label>
             <input
               type="text"
               value={draftBudget}
@@ -220,11 +188,7 @@ export function LeadDetailPanel({
           </div>
 
           <div className="mt-4 flex items-center gap-2 border-t border-line-soft pt-4">
-            <ContactAvatar
-              seed={contact.lydiaContactId}
-              avatarUrl={contact.avatarUrl}
-              className="h-9 w-9"
-            />
+            <ContactAvatar seed={contact.lydiaContactId} avatarUrl={contact.avatarUrl} className="h-9 w-9" />
             <div>
               <p className="text-sm font-semibold text-ink">{contact.name}</p>
               <p className="flex items-center gap-1 text-xs text-success">
@@ -240,9 +204,7 @@ export function LeadDetailPanel({
           </div>
 
           <div className="mt-4 border-t border-line-soft pt-4">
-            <label className="mb-1 block text-xs font-medium text-muted">
-              Usuario responsable
-            </label>
+            <label className="mb-1 block text-xs font-medium text-muted">Usuario responsable</label>
             {canReassign ? (
               <select
                 value={assignee?.id ?? ""}
@@ -273,10 +235,7 @@ export function LeadDetailPanel({
             )}
           </div>
 
-          <NotesSection
-            conversationId={conversation.id}
-            canUseNotes={canUseBackend}
-          />
+          <NotesSection conversationId={conversation.id} canUseNotes={canUseBackend} />
         </div>
       )}
     </section>

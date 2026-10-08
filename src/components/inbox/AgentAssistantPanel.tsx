@@ -13,15 +13,7 @@ const TAG_GROUPS = [
   {
     id: "intencion",
     label: "Intención",
-    options: [
-      "Frío",
-      "Interesado",
-      "Alta intención",
-      "Objeción",
-      "Postergado",
-      "Cerrado",
-      "Perdido",
-    ],
+    options: ["Frío", "Interesado", "Alta intención", "Objeción", "Postergado", "Cerrado", "Perdido"],
   },
   {
     id: "decisor",
@@ -31,28 +23,12 @@ const TAG_GROUPS = [
   {
     id: "accion",
     label: "Siguiente acción",
-    options: [
-      "Visita",
-      "Llamada",
-      "Horario",
-      "Evaluación",
-      "Matrícula",
-      "Pago",
-      "Follow-up",
-    ],
+    options: ["Visita", "Llamada", "Horario", "Evaluación", "Matrícula", "Pago", "Follow-up"],
   },
   {
     id: "fuente",
     label: "Fuente",
-    options: [
-      "Meta",
-      "TikTok",
-      "Volanteo",
-      "Banner",
-      "Referido",
-      "Walk-in",
-      "Otro",
-    ],
+    options: ["Meta", "TikTok", "Volanteo", "Banner", "Referido", "Walk-in", "Otro"],
   },
 ] as const;
 
@@ -62,11 +38,7 @@ type ChatItem =
   | { id: number; role: "asesora"; text: string }
   | { id: number; role: "ia"; text: string; suggestion?: string }
   | { id: number; role: "error"; text: string };
-type NewChatItem = ChatItem extends infer T
-  ? T extends ChatItem
-    ? Omit<T, "id">
-    : never
-  : never;
+type NewChatItem = ChatItem extends infer T ? (T extends ChatItem ? Omit<T, "id"> : never) : never;
 
 interface Props {
   conversationId: string;
@@ -79,16 +51,8 @@ interface Props {
   onUseSuggestion: (text: string) => void;
 }
 
-export function AgentAssistantPanel({
-  conversationId,
-  initialTags,
-  canUseBackend,
-  requestId,
-  onUseSuggestion,
-}: Props) {
-  const [tags, setTags] = useState<Partial<Record<TagGroupId, string>>>(
-    initialTags ?? {},
-  );
+export function AgentAssistantPanel({ conversationId, initialTags, canUseBackend, requestId, onUseSuggestion }: Props) {
+  const [tags, setTags] = useState<Partial<Record<TagGroupId, string>>>(initialTags ?? {});
   const [items, setItems] = useState<ChatItem[]>([]);
   const [draft, setDraft] = useState("");
   const nextId = useRef(1);
@@ -96,25 +60,18 @@ export function AgentAssistantPanel({
   const agentChat = useAgentChat();
   const updateTags = useUpdateAgentTags();
 
-  const push = (item: NewChatItem) =>
-    setItems((prev) => [
-      ...prev,
-      { ...item, id: nextId.current++ } as ChatItem,
-    ]);
+  const push = (item: NewChatItem) => setItems((prev) => [...prev, { ...item, id: nextId.current++ } as ChatItem]);
 
   // El historial que ve la IA: lo que escribio la asesora y lo que respondio
   // ella misma (con la respuesta sugerida), sin los avisos de error.
   const toLines = (list: ChatItem[]): AgentChatLine[] =>
     list.flatMap((item): AgentChatLine[] => {
-      if (item.role === "asesora")
-        return [{ role: "asesora", text: item.text }];
+      if (item.role === "asesora") return [{ role: "asesora", text: item.text }];
       if (item.role === "ia")
         return [
           {
             role: "ia",
-            text: item.suggestion
-              ? `${item.text} Respuesta sugerida: "${item.suggestion}"`
-              : item.text,
+            text: item.suggestion ? `${item.text} Respuesta sugerida: "${item.suggestion}"` : item.text,
           },
         ];
       return [];
@@ -159,8 +116,7 @@ export function AgentAssistantPanel({
 
   const handleTagChange = (group: TagGroupId, value: string) => {
     setTags((prev) => ({ ...prev, [group]: value || undefined }));
-    if (canUseBackend)
-      updateTags.mutate({ conversationId, tags: { [group]: value || null } });
+    if (canUseBackend) updateTags.mutate({ conversationId, tags: { [group]: value || null } });
   };
 
   const handledRequest = useRef(0);
@@ -182,9 +138,7 @@ export function AgentAssistantPanel({
         <div className="grid grid-cols-2 gap-2">
           {TAG_GROUPS.map((group) => (
             <label key={group.id} className="block">
-              <span className="mb-0.5 block text-[11px] text-muted">
-                {group.label}
-              </span>
+              <span className="mb-0.5 block text-[11px] text-muted">{group.label}</span>
               <select
                 value={tags[group.id] ?? ""}
                 onChange={(e) => handleTagChange(group.id, e.target.value)}
@@ -213,9 +167,8 @@ export function AgentAssistantPanel({
         <div className="scroll-slim min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
           {items.length === 0 && !agentChat.isPending && (
             <p className="rounded-lg bg-bg-subtle px-3 py-2.5 text-xs text-muted">
-              Pídele una respuesta o dale una indicación, por ejemplo: “ofrécele
-              una visita el sábado” o “responde la objeción de precio”. También
-              puedes pulsar el foco del mensaje.
+              Pídele una respuesta o dale una indicación, por ejemplo: “ofrécele una visita el sábado” o “responde la
+              objeción de precio”. También puedes pulsar el foco del mensaje.
             </p>
           )}
 
@@ -254,9 +207,7 @@ export function AgentAssistantPanel({
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          navigator.clipboard?.writeText(item.suggestion!)
-                        }
+                        onClick={() => navigator.clipboard?.writeText(item.suggestion!)}
                         className="flex items-center gap-1 rounded-md border border-line px-2.5 py-1 text-xs text-ink-soft hover:bg-surface"
                       >
                         <Icon name="copiar" size={12} />
@@ -271,11 +222,7 @@ export function AgentAssistantPanel({
 
           {agentChat.isPending && (
             <p className="flex items-center gap-1.5 text-xs text-muted">
-              <Icon
-                name="chispa"
-                size={13}
-                className="animate-pulse text-brand"
-              />
+              <Icon name="chispa" size={13} className="animate-pulse text-brand" />
               Pensando…
             </p>
           )}

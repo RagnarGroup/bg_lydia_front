@@ -37,8 +37,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 export function useConversations(status: "open" | "resolved" | "all" = "all") {
   return useQuery({
     queryKey: ["conversations", status],
-    queryFn: () =>
-      fetchJson<{ conversations: InboxConversation[] }>(`/api/lydia/conversations?status=${status}`),
+    queryFn: () => fetchJson<{ conversations: InboxConversation[] }>(`/api/lydia/conversations?status=${status}`),
     select: (data) => data.conversations,
     enabled: LYDIA_API_ENABLED,
     retry: false,
@@ -65,8 +64,7 @@ export function useMessageSearch(query: string) {
 export function useMessages(conversationId: string | null) {
   return useQuery({
     queryKey: ["messages", conversationId],
-    queryFn: () =>
-      fetchJson<{ messages: InboxMessage[] }>(`/api/lydia/conversations/${conversationId}/messages`),
+    queryFn: () => fetchJson<{ messages: InboxMessage[] }>(`/api/lydia/conversations/${conversationId}/messages`),
     select: (data) => data.messages,
     enabled: LYDIA_API_ENABLED && conversationId !== null,
     retry: false,
@@ -352,7 +350,13 @@ export function useSendReaction(conversationId: string | null) {
 export interface ForwardMessageInput {
   targetConversationId: string;
   text: string;
-  media?: { mediatype: SendMediaInput["mediatype"]; media: string; mimetype?: string; fileName?: string; caption?: string };
+  media?: {
+    mediatype: SendMediaInput["mediatype"];
+    media: string;
+    mimetype?: string;
+    fileName?: string;
+    caption?: string;
+  };
 }
 
 export function useForwardMessage() {
@@ -418,7 +422,11 @@ export function useResolveMedia(
 // documento que todavia no se cargo, lo pide en el momento de descargar.
 export function useFetchMediaDataUrl() {
   const queryClient = useQueryClient();
-  return async (messageId: string, raw: { key: unknown; message: unknown; messageType: string }, instanceName: string) => {
+  return async (
+    messageId: string,
+    raw: { key: unknown; message: unknown; messageType: string },
+    instanceName: string,
+  ) => {
     const data = await queryClient.fetchQuery(mediaQueryOptions(messageId, raw, instanceName));
     return data.dataUrl;
   };

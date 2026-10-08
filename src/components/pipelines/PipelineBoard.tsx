@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  getLeadsByStage,
-  incomingRequests,
-  leads as mockLeads,
-  pipelineStages,
-  sumBudget,
-} from "@/lib/mock-data";
+import { getLeadsByStage, incomingRequests, leads as mockLeads, pipelineStages, sumBudget } from "@/lib/mock-data";
 import type { Lead, PipelineStageId } from "@/lib/types";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
@@ -48,9 +42,7 @@ export function PipelineBoard() {
       if (onlyMine && lead.assignedAgentId !== CURRENT_AGENT_ID) return false;
       if (search.trim()) {
         const query = search.trim().toLowerCase();
-        return (
-          lead.contactName.toLowerCase().includes(query) || lead.leadNumber.toLowerCase().includes(query)
-        );
+        return lead.contactName.toLowerCase().includes(query) || lead.leadNumber.toLowerCase().includes(query);
       }
       return true;
     });
@@ -120,7 +112,10 @@ export function PipelineBoard() {
             </svg>
           </button>
           {filterMenuOpen && (
-            <div role="menu" className="absolute left-0 z-10 mt-1 w-44 rounded-md border border-line bg-surface py-1 text-sm shadow-lg">
+            <div
+              role="menu"
+              className="absolute left-0 z-10 mt-1 w-44 rounded-md border border-line bg-surface py-1 text-sm shadow-lg"
+            >
               <button
                 type="button"
                 role="menuitem"
@@ -190,7 +185,10 @@ export function PipelineBoard() {
               </svg>
             </button>
             {menuOpen && (
-              <div role="menu" className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-line bg-surface py-1 text-sm shadow-lg">
+              <div
+                role="menu"
+                className="absolute right-0 z-10 mt-1 w-44 rounded-md border border-line bg-surface py-1 text-sm shadow-lg"
+              >
                 <button
                   type="button"
                   role="menuitem"

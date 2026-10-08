@@ -109,7 +109,13 @@ export function CalendarView() {
                 return (
                   <div key={task.id} className="rounded-lg border border-line bg-surface px-3 py-2 text-sm">
                     <span className="font-semibold text-ink">
-                      {task.type === "tarea" ? "Tarea" : task.type === "reserva" ? "Reserva" : task.type === "chat" ? "Chat" : "Nota"}
+                      {task.type === "tarea"
+                        ? "Tarea"
+                        : task.type === "reserva"
+                          ? "Reserva"
+                          : task.type === "chat"
+                            ? "Chat"
+                            : "Nota"}
                     </span>{" "}
                     <span className="text-ink-soft">
                       para {task.day === "hoy" ? "hoy" : "mañana"} para {agent?.name ?? "—"}:{" "}

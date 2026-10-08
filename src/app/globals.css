@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans:
-    "Plus Jakarta Sans", var(--font-geist-sans), system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", var(--font-geist-sans), system-ui, sans-serif;
 
   /* Paleta oficial de Brittany Group (verificada contra sga_brittany_front
      y academico_brittanygroup_front: azul + naranja son consistentes en

@@ -137,9 +137,7 @@ function MessageSourceHandles({ colorClass }: { colorClass: string }) {
 export function MessageNode({ id, data, selected }: NodeProps & { data: BotMessageNodeData }) {
   const { updateText } = useBotCanvasActions();
   return (
-    <div
-      className={`w-64 rounded-lg bg-brand text-white shadow-md ${selected ? "ring-2 ring-white" : ""}`}
-    >
+    <div className={`w-64 rounded-lg bg-brand text-white shadow-md ${selected ? "ring-2 ring-white" : ""}`}>
       <TargetHandles colorClass="!border-brand" />
       <NodeHeader id={id} label="Mensaje" isStart={data.isStart} />
       <div className="p-2">

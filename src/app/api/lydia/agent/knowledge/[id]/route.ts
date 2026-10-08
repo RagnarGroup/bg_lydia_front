@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  deleteAgentKnowledge,
-  updateAgentKnowledge,
-} from "@/lib/lydia-api/client";
+import { deleteAgentKnowledge, updateAgentKnowledge } from "@/lib/lydia-api/client";
 import { lydiaErrorResponse, requireAdmin } from "@/lib/auth/requireAdmin";
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin();
   if ("response" in auth) return auth.response;
 
@@ -32,10 +26,7 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin();
   if ("response" in auth) return auth.response;
 

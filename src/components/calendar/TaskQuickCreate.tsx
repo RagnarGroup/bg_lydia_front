@@ -75,7 +75,10 @@ export function TaskQuickCreate({ onCreate }: Props) {
           <Icon name="chevronDown" size={12} strokeWidth={2} />
         </button>
         {typeMenuOpen && (
-          <div role="menu" className="absolute left-0 z-10 mt-1 w-40 rounded-md border border-line bg-surface py-1 text-sm shadow-lg">
+          <div
+            role="menu"
+            className="absolute left-0 z-10 mt-1 w-40 rounded-md border border-line bg-surface py-1 text-sm shadow-lg"
+          >
             {typeOptions.map((opt) => (
               <button
                 key={opt.id}

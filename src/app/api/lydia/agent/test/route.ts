@@ -11,10 +11,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const message = typeof body?.message === "string" ? body.message.trim() : "";
   if (!message) {
-    return NextResponse.json(
-      { error: "message es requerido" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "message es requerido" }, { status: 400 });
   }
 
   try {

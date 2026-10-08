@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  getAgentInstructions,
-  setAgentInstructions,
-} from "@/lib/lydia-api/client";
+import { getAgentInstructions, setAgentInstructions } from "@/lib/lydia-api/client";
 import { lydiaErrorResponse, requireAdmin } from "@/lib/auth/requireAdmin";
 
 export async function GET() {
@@ -22,10 +19,7 @@ export async function PUT(request: Request) {
 
   const body = await request.json().catch(() => null);
   if (!body || typeof body.instructions !== "string") {
-    return NextResponse.json(
-      { error: "instructions es requerido" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "instructions es requerido" }, { status: 400 });
   }
 
   try {

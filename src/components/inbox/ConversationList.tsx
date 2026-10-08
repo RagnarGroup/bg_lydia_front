@@ -145,7 +145,10 @@ export function ConversationList({
               </svg>
             </button>
             {filterMenuOpen && (
-              <div role="menu" className="absolute left-0 z-10 mt-1 w-40 rounded-md border border-line bg-surface py-1 text-sm shadow-lg">
+              <div
+                role="menu"
+                className="absolute left-0 z-10 mt-1 w-40 rounded-md border border-line bg-surface py-1 text-sm shadow-lg"
+              >
                 {filters.map((filter) => (
                   <button
                     key={filter.id}
@@ -181,7 +184,10 @@ export function ConversationList({
               </svg>
             </button>
             {channelMenuOpen && (
-              <div role="menu" className="absolute left-0 z-10 mt-1 w-44 rounded-md border border-line bg-surface py-1 text-sm shadow-lg">
+              <div
+                role="menu"
+                className="absolute left-0 z-10 mt-1 w-44 rounded-md border border-line bg-surface py-1 text-sm shadow-lg"
+              >
                 {CHANNEL_FILTERS.map((filter) => (
                   <button
                     key={filter.id}

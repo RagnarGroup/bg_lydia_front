@@ -104,9 +104,7 @@ const MEDIA_KIND_BY_KEY: Record<string, InboxMediaKind> = {
 
 function detectMedia(raw: EvoMessage): InboxMessageMedia | undefined {
   for (const [key, kind] of Object.entries(MEDIA_KIND_BY_KEY)) {
-    const payload = raw.message?.[key] as
-      | { caption?: string; fileName?: string; mimetype?: string }
-      | undefined;
+    const payload = raw.message?.[key] as { caption?: string; fileName?: string; mimetype?: string } | undefined;
     if (payload) {
       return {
         kind,
@@ -155,7 +153,10 @@ export function adaptMessage(message: EvoMessage, reactions: InboxMessageReactio
 // no encaja como un InboxMessage mas en el hilo. Esto los saca de la lista y
 // arma un mapa id-del-mensaje-original -> reacciones, para que adaptMessage
 // se las adjunte al pasar.
-export function foldReactions(records: EvoMessage[]): { records: EvoMessage[]; reactionsByMessageId: Map<string, InboxMessageReaction[]> } {
+export function foldReactions(records: EvoMessage[]): {
+  records: EvoMessage[];
+  reactionsByMessageId: Map<string, InboxMessageReaction[]>;
+} {
   const reactionsByMessageId = new Map<string, InboxMessageReaction[]>();
   const rest: EvoMessage[] = [];
 

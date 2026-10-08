@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  createAgentKnowledge,
-  listAgentKnowledge,
-} from "@/lib/lydia-api/client";
+import { createAgentKnowledge, listAgentKnowledge } from "@/lib/lydia-api/client";
 import { lydiaErrorResponse, requireAdmin } from "@/lib/auth/requireAdmin";
 
 export async function GET() {

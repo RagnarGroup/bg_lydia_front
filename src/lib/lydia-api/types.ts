@@ -196,12 +196,7 @@ export interface EvoMessagesResponse {
 
 // LYD-8: pipeline de leads. GET/POST /crm/leads, GET/PATCH/DELETE /crm/leads/:id
 export type LeadStage =
-  | "contacto_inicial"
-  | "negociacion"
-  | "promesa_pago"
-  | "discusion_contrato"
-  | "matriculado"
-  | "venta_perdida";
+  "contacto_inicial" | "negociacion" | "promesa_pago" | "discusion_contrato" | "matriculado" | "venta_perdida";
 
 export interface EvoLead {
   id: string;

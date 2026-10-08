@@ -41,12 +41,7 @@ export function NewLeadModal({ initialStage, lockStage, onClose, onCreate }: Pro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-      <button
-        type="button"
-        aria-label="Cerrar"
-        onClick={onClose}
-        className="absolute inset-0 cursor-default"
-      />
+      <button type="button" aria-label="Cerrar" onClick={onClose} className="absolute inset-0 cursor-default" />
       <form
         onSubmit={handleSubmit}
         role="dialog"

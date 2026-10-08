@@ -127,25 +127,17 @@ interface DeleteConfirmationProps {
 
 // Componente aparte para que la consulta del lead solo se dispare al abrir la
 // confirmacion, no una vez por cada fila de la lista.
-function DeleteConfirmation({
-  conversationId,
-  isPending,
-  errorMessage,
-  onCancel,
-  onConfirm,
-}: DeleteConfirmationProps) {
+function DeleteConfirmation({ conversationId, isPending, errorMessage, onCancel, onConfirm }: DeleteConfirmationProps) {
   const { data: leads, isLoading } = useLeads({ chatId: conversationId });
   const lead = leads?.[0];
 
   return (
     <div className="p-1.5">
-      <p className="px-1 text-xs text-ink-soft">
-        Esto borra la conversación y sus mensajes. No se puede deshacer.
-      </p>
+      <p className="px-1 text-xs text-ink-soft">Esto borra la conversación y sus mensajes. No se puede deshacer.</p>
       {lead && (
         <p className="mt-1.5 rounded-md bg-danger/10 px-1.5 py-1 text-xs text-danger">
-          Tiene un lead vinculado ({lead.contactName}). También se eliminarán su presupuesto, etapa del
-          pipeline, notas y eventos del calendario.
+          Tiene un lead vinculado ({lead.contactName}). También se eliminarán su presupuesto, etapa del pipeline, notas
+          y eventos del calendario.
         </p>
       )}
       {errorMessage && <p className="mt-1.5 px-1 text-xs text-danger">{errorMessage}</p>}
