@@ -57,10 +57,21 @@ export function MessageMedia({ messageId, media, instanceName }: Props) {
   }
 
   if (isLoading || !dataUrl) {
-    return <div className="h-40 w-56 animate-pulse rounded-lg bg-bg-subtle" />;
+    return (
+      <div
+        className={`animate-pulse rounded-lg bg-bg-subtle ${media.kind === "sticker" ? "h-36 w-36" : "h-40 w-56"}`}
+      />
+    );
   }
 
-  if (media.kind === "image" || media.kind === "sticker") {
+  // LYD-76: los stickers (stickerMessage de WhatsApp) van a su tamano, sin
+  // estirarse como una foto.
+  if (media.kind === "sticker") {
+    // eslint-disable-next-line @next/next/no-img-element -- data: URI, no aplica el optimizador de Next
+    return <img src={dataUrl} alt="sticker" className="h-36 w-36 object-contain" />;
+  }
+
+  if (media.kind === "image") {
     // eslint-disable-next-line @next/next/no-img-element -- data: URI, no aplica el optimizador de Next
     return <img src={dataUrl} alt={media.caption ?? "imagen adjunta"} className="max-w-xs rounded-lg" />;
   }

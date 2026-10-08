@@ -214,7 +214,7 @@ export function ChatThread({
               <div className="my-3 flex justify-center">
                 <span className="rounded-full bg-surface px-3 py-1 text-xs text-muted shadow-sm">{group.day}</span>
               </div>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
                 {group.messages.map((message) => (
                   <div
                     key={message.id}
