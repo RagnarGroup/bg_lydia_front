@@ -89,7 +89,7 @@ export type InboxConversationStatus = "abierto" | "sin_respuesta" | "cerrado";
 
 // LYD-31: canales del inbox (ver Integration en wa.types.ts del back).
 // "whatsapp" cubre tanto Baileys como Cloud API. "tiktok" (LYD-78) todavia no
-// tiene canal en el back: solo lo usa la conversacion demo (tiktok-demo.ts).
+// tiene canal en el back: queda listo (nombre e icono) para cuando lo tenga.
 export type InboxChannel = "whatsapp" | "messenger" | "instagram" | "tiktok";
 
 export interface InboxConversation {
