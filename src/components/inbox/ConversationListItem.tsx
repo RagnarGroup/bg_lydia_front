@@ -1,8 +1,8 @@
 import type { InboxConversation } from "@/lib/lydia-api/inbox-types";
-import { CHANNEL_META } from "@/lib/lydia-api/channel";
 import { formatRelativeTime } from "@/lib/format";
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { ConversationRowMenu } from "./ConversationRowMenu";
+import { ChannelBadge } from "./ChannelBadge";
 
 interface Props {
   conversation: InboxConversation;
@@ -12,7 +12,6 @@ interface Props {
 
 export function ConversationListItem({ conversation, active, onClick }: Props) {
   const { contact } = conversation;
-  const channel = CHANNEL_META[conversation.inboxChannel];
 
   return (
     <div
@@ -36,12 +35,8 @@ export function ConversationListItem({ conversation, active, onClick }: Props) {
     >
       <div className="relative shrink-0">
         <ContactAvatar seed={contact.lydiaContactId} avatarUrl={contact.avatarUrl} className="h-10 w-10" />
-        {/* LYD-31: de que canal es esta conversacion (antes era un punto verde fijo, sin significado). */}
-        <span
-          title={channel.label}
-          className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white"
-          style={{ backgroundColor: channel.color }}
-        />
+        {/* LYD-31: de que canal es esta conversacion. LYD-78: logo del canal en vez del punto de color. */}
+        <ChannelBadge channel={conversation.inboxChannel} className="absolute -bottom-1 -right-1 ring-2 ring-white" />
       </div>
 
       <div className="min-w-0 flex-1">

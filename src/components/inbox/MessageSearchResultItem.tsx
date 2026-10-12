@@ -1,8 +1,8 @@
 import type { InboxContact, InboxMessageSearchHit } from "@/lib/lydia-api/inbox-types";
-import { CHANNEL_META } from "@/lib/lydia-api/channel";
 import { formatRelativeTime } from "@/lib/format";
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { HighlightedText } from "./HighlightedText";
+import { ChannelBadge } from "./ChannelBadge";
 
 interface Props {
   hit: InboxMessageSearchHit;
@@ -16,8 +16,6 @@ interface Props {
 
 // LYD-60: fila de la seccion "Mensajes" del buscador del inbox.
 export function MessageSearchResultItem({ hit, contact, query, active, onClick }: Props) {
-  const channel = CHANNEL_META[hit.inboxChannel];
-
   return (
     <button
       type="button"
@@ -32,11 +30,7 @@ export function MessageSearchResultItem({ hit, contact, query, active, onClick }
           avatarUrl={contact?.avatarUrl ?? hit.avatarUrl}
           className="h-10 w-10"
         />
-        <span
-          title={channel.label}
-          className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white"
-          style={{ backgroundColor: channel.color }}
-        />
+        <ChannelBadge channel={hit.inboxChannel} className="absolute -bottom-1 -right-1 ring-2 ring-white" />
       </div>
 
       <div className="min-w-0 flex-1">

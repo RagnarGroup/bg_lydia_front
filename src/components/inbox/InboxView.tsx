@@ -16,6 +16,12 @@ import {
 } from "@/lib/queries/conversations";
 import { getMockMessages, mockInboxConversations } from "@/lib/lydia-api/mock-fallback";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
+import {
+  buildTikTokDemoConversation,
+  getTikTokDemoMessages,
+  isTikTokDemoConversation,
+  useTikTokDemoArrival,
+} from "@/lib/lydia-api/tiktok-demo";
 import type { InboxMessage } from "@/lib/lydia-api/inbox-types";
 import { ConversationList } from "./ConversationList";
 import { LeadDetailPanel, type SidePanelView } from "./LeadDetailPanel";
@@ -86,10 +92,23 @@ export function InboxView() {
   // persistirlo.
   const [mockContactOverrides, setMockContactOverrides] = useState<Record<string, { name: string; phone: string }>>({});
 
+  // LYD-78: conversacion demo de TikTok (solo con ?demo=tiktok, ver tiktok-demo.ts).
+  const tiktokDemoArrivedAt = useTikTokDemoArrival();
+  const [tiktokDemoRead, setTiktokDemoRead] = useState(false);
+
   const { data: realConversations = [], isLoading, error } = useConversations("all");
   const isMockMode = !LYDIA_API_ENABLED || error !== null;
   const conversations = useMemo(() => {
-    const base = isMockMode ? mockInboxConversations : realConversations;
+    const real = isMockMode ? mockInboxConversations : realConversations;
+    let base = real;
+    if (tiktokDemoArrivedAt) {
+      const demo = buildTikTokDemoConversation(tiktokDemoArrivedAt, tiktokDemoRead);
+      const lastReply = mockDrafts[demo.id]?.at(-1);
+      base = [
+        lastReply ? { ...demo, lastMessagePreview: lastReply.text, lastMessageAt: lastReply.sentAt } : demo,
+        ...real,
+      ];
+    }
     if (!isMockMode) return base;
     return base.map((c) => {
       const override = mockContactOverrides[c.id];
@@ -103,7 +122,7 @@ export function InboxView() {
         },
       };
     });
-  }, [isMockMode, realConversations, mockContactOverrides]);
+  }, [isMockMode, realConversations, mockContactOverrides, tiktokDemoArrivedAt, tiktokDemoRead, mockDrafts]);
 
   // LYD-57: sonido + notificacion del navegador cuando llega un mensaje
   // nuevo en cualquier conversacion. En modo mock no hay polling real, asi
@@ -117,12 +136,15 @@ export function InboxView() {
   // mensajes sin leer lo marca como leido (LYD-13), entrar al inbox marcaba la primera conversacion como leida
   // sin que nadie la viera.
   const selectedConversation = conversations.find((c) => c.id === selectedConversationId) ?? null;
+  // La conversacion demo de TikTok se maneja como el modo mock aunque el
+  // backend este conectado: sus mensajes y respuestas viven solo en memoria.
+  const isLocalConversation = isMockMode || isTikTokDemoConversation(selectedConversationId);
 
   const {
     data: realMessages = [],
     isLoading: realMessagesLoading,
     error: realMessagesError,
-  } = useMessages(isMockMode ? null : selectedConversationId);
+  } = useMessages(isLocalConversation ? null : selectedConversationId);
   const sendMessage = useSendMessage(selectedConversationId);
   const sendMedia = useSendMedia(selectedConversationId);
   const sendAudio = useSendAudio(selectedConversationId);
@@ -150,7 +172,7 @@ export function InboxView() {
   }
 
   const handleLoadOlder = async () => {
-    if (isMockMode || selectedConversationId === null) return;
+    if (isLocalConversation || selectedConversationId === null) return;
     const { messages, hasMore } = await loadOlderMessages.mutateAsync(nextOlderPage);
     setOlderMessages((prev) => [...messages, ...prev]);
     setNextOlderPage((p) => p + 1);
@@ -159,7 +181,7 @@ export function InboxView() {
 
   const handleEditContact = (name: string, phone: string) => {
     if (selectedConversationId === null) return;
-    if (isMockMode) {
+    if (isLocalConversation) {
       setMockContactOverrides((prev) => ({
         ...prev,
         [selectedConversationId]: { name, phone },
@@ -180,25 +202,30 @@ export function InboxView() {
   // pegado hasta que el agente cerraba y volvia a abrir el chat.
   const selectedUnreadCount = selectedConversation?.unreadCount ?? 0;
   useEffect(() => {
-    if (isMockMode || selectedConversationId === null) return;
+    if (isLocalConversation || selectedConversationId === null) return;
     if (selectedUnreadCount > 0) {
       markConversationRead.mutate(selectedConversationId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- markConversationRead cambia de identidad en cada render, no debe disparar el efecto por si sola
-  }, [selectedConversationId, isMockMode, selectedUnreadCount]);
+  }, [selectedConversationId, isLocalConversation, selectedUnreadCount]);
 
   const mockMessages = useMemo(
     () =>
       selectedConversationId === null
         ? []
-        : [...getMockMessages(selectedConversationId), ...(mockDrafts[selectedConversationId] ?? [])],
-    [selectedConversationId, mockDrafts],
+        : [
+            ...(isTikTokDemoConversation(selectedConversationId) && tiktokDemoArrivedAt
+              ? getTikTokDemoMessages(tiktokDemoArrivedAt)
+              : getMockMessages(selectedConversationId)),
+            ...(mockDrafts[selectedConversationId] ?? []),
+          ],
+    [selectedConversationId, mockDrafts, tiktokDemoArrivedAt],
   );
 
   // LYD-14: Composer espera una promesa que se rechaza si el envio falla,
   // para no borrar el texto ni perder el error en silencio.
   const handleSend = async (text: string, quoted?: ComposerQuoted) => {
-    if (!isMockMode) {
+    if (!isLocalConversation) {
       await sendMessage.mutateAsync(quoted ? { content: text, quoted } : text);
       return;
     }
@@ -223,7 +250,7 @@ export function InboxView() {
   // LYD-15: en modo mock no hay a quien mandarle el archivo real -- se deja
   // un draft de texto describiendolo, igual que el resto del mock del inbox.
   const handleSendMedia = async (input: ComposerMediaInput) => {
-    if (!isMockMode) {
+    if (!isLocalConversation) {
       await sendMedia.mutateAsync(input);
       return;
     }
@@ -248,7 +275,7 @@ export function InboxView() {
   // LYD-53: mismo criterio que handleSendMedia -- en mock queda un draft de
   // texto describiendolo, no hay a quien mandarle la nota de voz real.
   const handleSendAudio = async (input: ComposerAudioInput) => {
-    if (!isMockMode) {
+    if (!isLocalConversation) {
       await sendAudio.mutateAsync(input);
       return;
     }
@@ -274,12 +301,12 @@ export function InboxView() {
   // Chat real ni segunda conversacion de ejemplo con sentido) -- se ignoran
   // ahi, mismo criterio que el resto de las acciones de solo-lectura del mock.
   const handleReact = (message: InboxMessage, emoji: string) => {
-    if (isMockMode) return;
+    if (isLocalConversation) return;
     sendReaction.mutate({ key: message.raw.key, reaction: emoji });
   };
 
   const handleForward = (message: InboxMessage, targetConversationId: string) => {
-    if (isMockMode) return;
+    if (isLocalConversation || isTikTokDemoConversation(targetConversationId)) return;
     if (message.media) {
       // El adjunto original ya se resolvio a base64 al pintarse (LYD-15,
       // cacheado por messageId) -- pero forwardMessage no tiene acceso a ese
@@ -328,6 +355,7 @@ export function InboxView() {
             selectedConversationId={selectedConversationId}
             onSelect={(id) => {
               setSelectedConversationId(id);
+              if (isTikTokDemoConversation(id)) setTiktokDemoRead(true);
               setAgentRequest(null);
               setFocusMessageId(null);
               setMobileView("thread");
@@ -358,10 +386,10 @@ export function InboxView() {
             <div className={`${mobileView === "thread" ? "flex" : "hidden"} w-full flex-1 md:flex`}>
               <ChatThread
                 conversation={selectedConversation}
-                thread={isMockMode ? mockMessages : [...olderMessages, ...realMessages]}
-                isLoading={isMockMode ? false : realMessagesLoading}
-                error={isMockMode ? null : realMessagesError}
-                sending={!isMockMode && (sendMessage.isPending || sendMedia.isPending || sendAudio.isPending)}
+                thread={isLocalConversation ? mockMessages : [...olderMessages, ...realMessages]}
+                isLoading={isLocalConversation ? false : realMessagesLoading}
+                error={isLocalConversation ? null : realMessagesError}
+                sending={!isLocalConversation && (sendMessage.isPending || sendMedia.isPending || sendAudio.isPending)}
                 onSend={handleSend}
                 onSendMedia={handleSendMedia}
                 onSendAudio={handleSendAudio}
@@ -370,7 +398,7 @@ export function InboxView() {
                 onEditContact={handleEditContact}
                 onLoadOlder={handleLoadOlder}
                 loadingOlder={loadOlderMessages.isPending}
-                hasMoreOlder={!isMockMode && hasMoreOlder && olderMessages.length + realMessages.length >= 100}
+                hasMoreOlder={!isLocalConversation && hasMoreOlder && olderMessages.length + realMessages.length >= 100}
                 focusMessageId={focusMessageId}
                 onBack={() => setMobileView("list")}
                 onAskAgent={() => {

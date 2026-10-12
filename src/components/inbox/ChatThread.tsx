@@ -7,6 +7,7 @@ import { formatLeadCardDate, formatMessageDay } from "@/lib/format";
 import { MessageBubble } from "./MessageBubble";
 import { Composer, type ComposerAudioInput, type ComposerMediaInput, type ComposerQuoted } from "./Composer";
 import { EditContactMenu } from "./EditContactMenu";
+import { ChannelBadge } from "./ChannelBadge";
 import { Icon } from "@/components/icons";
 
 interface Props {
@@ -182,7 +183,10 @@ export function ChatThread({
           )}
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink">{conversation.contact.name}</p>
-            <p className="text-xs text-muted">{CHANNEL_META[conversation.inboxChannel].label}</p>
+            <p className="flex items-center gap-1 text-xs text-muted">
+              <ChannelBadge channel={conversation.inboxChannel} size={14} />
+              {CHANNEL_META[conversation.inboxChannel].label}
+            </p>
           </div>
         </div>
         <EditContactMenu

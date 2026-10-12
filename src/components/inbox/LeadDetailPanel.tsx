@@ -12,6 +12,7 @@ import { useAgents, useAssignAgent } from "@/lib/queries/conversations";
 import { useCreateLead, useLeads, useUpdateLead } from "@/lib/queries/leads";
 import { NotesSection } from "./NotesSection";
 import { AgentAssistantPanel } from "./AgentAssistantPanel";
+import { ChannelBadge } from "./ChannelBadge";
 
 export type SidePanelView = "detalle" | "agente";
 
@@ -138,12 +139,7 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
       ) : (
         <div className="mt-2">
           <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-brand">
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{
-                backgroundColor: CHANNEL_META[conversation.inboxChannel].color,
-              }}
-            />
+            <ChannelBadge channel={conversation.inboxChannel} size={18} />
             {CHANNEL_META[conversation.inboxChannel].label}
           </p>
           <p className="text-xs text-muted">Canal por donde llegó la conversación</p>
