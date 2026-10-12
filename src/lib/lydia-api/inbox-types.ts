@@ -87,9 +87,10 @@ export interface InboxMessageSearchHit {
 
 export type InboxConversationStatus = "abierto" | "sin_respuesta" | "cerrado";
 
-// LYD-31: los tres canales que hoy conecta lydia_bg_back (ver Integration en
-// wa.types.ts del back). "whatsapp" cubre tanto Baileys como Cloud API.
-export type InboxChannel = "whatsapp" | "messenger" | "instagram";
+// LYD-31: canales del inbox (ver Integration en wa.types.ts del back).
+// "whatsapp" cubre tanto Baileys como Cloud API. "tiktok" (LYD-78) todavia no
+// tiene canal en el back: solo lo usa la conversacion demo (tiktok-demo.ts).
+export type InboxChannel = "whatsapp" | "messenger" | "instagram" | "tiktok";
 
 export interface InboxConversation {
   id: string; // Chat.id (cuid) en lydia_bg_back
