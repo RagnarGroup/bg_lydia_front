@@ -147,11 +147,14 @@ export function ChatThread({
   }, [focusMessageId, thread, isLoading, hasMoreOlder, loadingOlder, onLoadOlder, autoLoadTick]);
 
   // LYD-54: Meta rechaza texto libre si pasaron mas de 24h desde el ultimo
-  // mensaje del contacto (solo deja plantillas pre-aprobadas fuera de esa
-  // ventana) -- antes el agente lo descubria recien cuando el envio fallaba
-  // en silencio del lado de Meta (el error solo quedaba en los logs de
-  // evolution-api). Se calcula 100% aca, del thread ya cargado -- alcanza:
-  // los ultimos mensajes siempre estan en la pagina ya traida por polling.
+  // mensaje del contacto -- antes el agente lo descubria recien cuando el
+  // envio fallaba. Se calcula 100% aca, del thread ya cargado: los ultimos
+  // mensajes siempre estan en la pagina ya traida por polling.
+  // LYD-82: sin ningun entrante en el thread NO se bloquea. En Messenger e
+  // Instagram los mensajes de usuarios reales no llegan al webhook (la app de
+  // Meta no tiene Advanced Access): solo quedan los ecos de la Pagina, asi que
+  // "sin entrantes" no significa "ventana cerrada". Se avisa suave y, si Meta
+  // rechaza el envio, el error del back se ve en el composer.
   // "now" en estado (no Date.now() directo en el render, que es impuro) y
   // refrescado cada minuto, asi el aviso aparece solo con el chat abierto
   // sin esperar a que llegue un mensaje nuevo.
@@ -163,7 +166,10 @@ export function ChatThread({
 
   const lastInboundAt = findLastInboundAt(thread);
   const outsideSessionWindow =
-    thread.length > 0 && (lastInboundAt === null || now - new Date(lastInboundAt).getTime() > SESSION_WINDOW_MS);
+    thread.length > 0 && lastInboundAt !== null && now - new Date(lastInboundAt).getTime() > SESSION_WINDOW_MS;
+  const unknownSessionWindow = thread.length > 0 && lastInboundAt === null;
+  // Solo WhatsApp tiene plantillas aprobadas; Messenger/Instagram no.
+  const hasTemplates = conversation.inboxChannel === "whatsapp";
 
   const groups = groupByDay(thread);
 
@@ -259,7 +265,15 @@ export function ChatThread({
           <p>
             Pasaron más de 24 h desde el último mensaje del contacto
             {lastInboundAt && ` (${formatLeadCardDate(lastInboundAt)})`}. Meta bloquea el envío de texto libre fuera de
-            esa ventana — esperá a que te escriba de nuevo o usá una plantilla aprobada.
+            esa ventana — esperá a que te escriba de nuevo{hasTemplates && " o usá una plantilla aprobada"}.
+          </p>
+        </div>
+      )}
+      {unknownSessionWindow && (
+        <div className="flex items-start gap-2 border-t border-line-soft bg-accent/10 px-4 py-2.5 text-xs text-accent-dark">
+          <Icon name="ajustes" size={14} className="mt-0.5 shrink-0" />
+          <p>
+            No tenemos registro del último mensaje del contacto; si pasaron más de 24 h, Meta puede rechazar el envío.
           </p>
         </div>
       )}
@@ -278,8 +292,10 @@ export function ChatThread({
   );
 }
 
-// LYD-54: "standard messaging window" de Meta -- misma regla en WhatsApp,
-// Messenger e Instagram (LYD-26).
+// LYD-54: "standard messaging window" de Meta -- misma regla de 24 h en
+// WhatsApp, Messenger e Instagram (LYD-26). Difiere por canal lo que se puede
+// hacer fuera de ella: WhatsApp admite plantillas aprobadas; Messenger e
+// Instagram no, hay que esperar a que el contacto escriba (LYD-82).
 const SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function findLastInboundAt(thread: InboxMessage[]): string | null {

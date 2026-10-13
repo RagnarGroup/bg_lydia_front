@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { friendlyMessage } from "@/lib/lydia-api/errors";
 import { getConversation, sendMedia } from "@/lib/lydia-api/client";
 import { autoAssignToSender } from "@/lib/lydia-api/auto-assign";
 
@@ -32,7 +33,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await autoAssignToSender(id);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
+    const message = friendlyMessage(error);
     const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
     return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
   }
