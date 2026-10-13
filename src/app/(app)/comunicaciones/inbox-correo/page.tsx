@@ -1,10 +1,6 @@
-import { EmptyState } from "@/components/shared/EmptyState";
+import { redirect } from "next/navigation";
 
+// LYD-84: la antigua "Inbox de correo" (sin uso) se reemplazo por Landing.
 export default function InboxCorreoPage() {
-  return (
-    <EmptyState
-      title="Inbox de correo"
-      description="Todavía no está conectado ningún canal de correo. Esta bandeja va a funcionar igual que el inbox de chat, pero para conversaciones por email."
-    />
-  );
+  redirect("/comunicaciones/landing");
 }
