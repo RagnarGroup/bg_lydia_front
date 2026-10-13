@@ -23,6 +23,13 @@ import type {
   EvoBotGraph,
   LeadStage,
 } from "./types";
+import type {
+  LandingLead,
+  LandingLeadDetail,
+  LandingLeadFilters,
+  LandingSummary,
+  LandingVisitInput,
+} from "@/lib/landing/types";
 import { foldReactions } from "./adapters";
 import type { AgentChatLine, AgentChatResult, InboxMessageReaction } from "./inbox-types";
 
@@ -57,6 +64,18 @@ function getConfig() {
   return { baseUrl: baseUrl.replace(/\/$/, ""), apikey };
 }
 
+// LYD-84: el status del back (p. ej. el 409 de "ya lo tomo X") tiene que
+// llegar al navegador; el mensaje conserva el formato de siempre.
+export class LydiaApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "LydiaApiError";
+    this.status = status;
+  }
+}
+
 async function evoFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const { baseUrl, apikey } = getConfig();
 
@@ -72,7 +91,7 @@ async function evoFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Lydia API ${res.status} en ${path}: ${body.slice(0, 300)}`);
+    throw new LydiaApiError(res.status, `Lydia API ${res.status} en ${path}: ${body.slice(0, 300)}`);
   }
 
   // LYD-40: los DELETE (deleteLead/deleteTemplate/deleteCalendarEvent y
@@ -481,4 +500,59 @@ export async function setAgentInstructions(data: {
 
 export async function testAgentSuggestion(message: string): Promise<{ suggestion: string }> {
   return evoFetch<{ suggestion: string }>(`/crm/agent/test`, { method: "POST", body: JSON.stringify({ message }) });
+}
+
+// LYD-84: leads del formulario web (brittanygroup.edu.pe/inscripciones). El
+// agentId lo inyecta siempre el route handler desde la sesion, nunca el body
+// del navegador.
+
+export async function listLandingLeads(filters: LandingLeadFilters = {}): Promise<LandingLead[]> {
+  const query = new URLSearchParams();
+  if (filters.sede) query.set("sede", filters.sede);
+  if (filters.visitStatus) query.set("visitStatus", filters.visitStatus);
+  if (filters.from) query.set("from", filters.from);
+  if (filters.to) query.set("to", filters.to);
+  if (filters.unclaimed) query.set("unclaimed", "true");
+  if (filters.search) query.set("search", filters.search);
+  const qs = query.toString();
+  return evoFetch<LandingLead[]>(`/crm/landing-leads${qs ? `?${qs}` : ""}`);
+}
+
+export async function getLandingSummary(): Promise<LandingSummary> {
+  return evoFetch<LandingSummary>(`/crm/landing-leads/summary`);
+}
+
+export async function getLandingLead(id: string): Promise<LandingLeadDetail> {
+  return evoFetch<LandingLeadDetail>(`/crm/landing-leads/${encodeURIComponent(id)}`);
+}
+
+function postLanding<T>(id: string, action: string, body: unknown): Promise<T> {
+  return evoFetch<T>(`/crm/landing-leads/${encodeURIComponent(id)}/${action}`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function claimLandingLead(id: string, agentId: string): Promise<unknown> {
+  return postLanding(id, "claim", { agentId });
+}
+
+export async function releaseLandingLead(id: string, agentId: string): Promise<unknown> {
+  return postLanding(id, "release", { agentId });
+}
+
+export async function setLandingVisit(
+  id: string,
+  agentId: string,
+  input: LandingVisitInput,
+): Promise<LandingLeadDetail> {
+  return postLanding(id, "visit", { agentId, status: input.status, visitAt: input.visitAt, note: input.note });
+}
+
+export async function addLandingNote(id: string, agentId: string, content: string): Promise<unknown> {
+  return postLanding(id, "notes", { agentId, content });
+}
+
+export async function setLandingStage(id: string, agentId: string, stage: LeadStage): Promise<unknown> {
+  return postLanding(id, "stage", { agentId, stage });
 }

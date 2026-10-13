@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useConversations } from "@/lib/queries/conversations";
+import { useLandingSummary } from "@/lib/queries/landing-leads";
 import { Icon, type IconName } from "./icons";
 import packageJson from "../../package.json";
 
@@ -39,7 +40,7 @@ const topEntries: NavEntry[] = [
     alwaysOpen: true,
     items: [
       { label: "Inbox de chat", href: "/comunicaciones/inbox-chat", icon: "chat" },
-      { label: "Inbox de correo", href: "/comunicaciones/inbox-correo", icon: "correo" },
+      { label: "Landing", href: "/comunicaciones/landing", icon: "landing" },
       { label: "Chats de equipo", href: "/comunicaciones/chats-equipo", icon: "equipo" },
     ],
   },
@@ -139,7 +140,11 @@ export function NavRail() {
   // 15s, no agrega requests aparte cuando el inbox esta abierto).
   const { data: conversations } = useConversations();
   const unreadTotal = (conversations ?? []).reduce((sum, c) => sum + c.unreadCount, 0);
-  const badgeFor = (section: NavSection) => (section.id === "comunicaciones" ? unreadTotal : 0);
+  // LYD-84: leads de Landing sin responsable (cola compartida), pollea cada 30 s.
+  const { data: landingSummary } = useLandingSummary();
+  const landingUnclaimed = landingSummary?.unclaimed ?? 0;
+  const badgeFor = (section: NavSection) =>
+    section.id === "comunicaciones" ? unreadTotal + landingUnclaimed : 0;
 
   const isSectionOpen = (section: NavSection) => {
     if (section.alwaysOpen) return true;
@@ -234,6 +239,9 @@ export function NavRail() {
                   {item.label}
                   {item.href === "/comunicaciones/inbox-chat" && unreadTotal > 0 && (
                     <UnreadBadge count={unreadTotal} className="ml-auto" />
+                  )}
+                  {item.href === "/comunicaciones/landing" && landingUnclaimed > 0 && (
+                    <UnreadBadge count={landingUnclaimed} className="ml-auto" />
                   )}
                 </Link>
               );
