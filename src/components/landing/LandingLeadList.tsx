@@ -5,7 +5,7 @@ import { LANDING_SEDES, VISIT_STATUSES } from "@/lib/landing/types";
 import { formatVisit, sedeStyle, visitStatusLabel } from "@/lib/landing/format";
 import { formatRelativeTime } from "@/lib/format";
 import { Icon } from "@/components/icons";
-import { AgentDot, NewBadge, SedeChip, VisitStatusBadge } from "./badges";
+import { AgentDot, NewBadge, SedeChip, TagChip, VisitStatusBadge } from "./badges";
 
 interface Props {
   leads: LandingLead[];
@@ -89,7 +89,10 @@ function LeadRow({ lead, active, onClick }: { lead: LandingLead; active: boolean
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="truncate font-semibold text-ink">{lead.contactName}</span>
-        <span className="shrink-0 text-xs text-muted">{lead.programa}</span>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
+          {lead.tags[0] && <TagChip tag={lead.tags[0]} />}
+          {lead.programa}
+        </span>
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="truncate text-sm text-ink-soft">

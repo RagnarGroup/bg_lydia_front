@@ -14,8 +14,20 @@ import {
   useSetLandingStage,
   useSetLandingVisit,
 } from "@/lib/queries/landing-leads";
-import { NewBadge, SedeChip, VisitStatusBadge } from "./badges";
+import { NewBadge, SedeChip, TagChip, VisitStatusBadge } from "./badges";
 import { ConfirmDialog, RescheduleDialog } from "./LandingDialogs";
+
+// LYD-87: orden y etiqueta de los datos de campana que reenvia la landing.
+const ATTRIBUTION_FIELDS: [string, string][] = [
+  ["utm_source", "Fuente"],
+  ["utm_medium", "Medio"],
+  ["utm_campaign", "Campaña"],
+  ["utm_content", "Contenido"],
+  ["utm_term", "Término"],
+  ["fbclid", "fbclid"],
+  ["referrer", "Referrer"],
+  ["landing_url", "Landing"],
+];
 
 // Estados finales: ya no admiten confirmar/reprogramar/asistencia.
 const TERMINAL: VisitStatus[] = ["asistio", "no_asistio", "cancelada"];
@@ -121,6 +133,10 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
   const isOwner = lead.assignedAgent?.id === agent?.id;
   const canRelease = !unclaimed && (isOwner || agent?.role === "administrador");
   const wa = whatsappUrl(lead.phone);
+  const attributionRows = ATTRIBUTION_FIELDS.flatMap(([key, label]) => {
+    const value = lead.attribution?.[key];
+    return value ? [[label, value] as [string, string]] : [];
+  });
 
   const changeVisit = (status: VisitStatus) => run(() => setVisit.mutateAsync({ id: lead.id, status }));
 
@@ -138,6 +154,13 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
         <p className="mt-0.5 text-sm text-muted">
           {lead.leadNumber} · Programa {lead.programa}
         </p>
+        {lead.tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {lead.tags.map((tag) => (
+              <TagChip key={tag} tag={tag} />
+            ))}
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg bg-bg-subtle px-3.5 py-3">
           <Icon name="calendario" size={20} className="shrink-0 text-brand" />
@@ -237,6 +260,19 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
         )}
       </div>
 
+      {attributionRows.length > 0 && (
+        <div className="mt-4 rounded-xl border border-line bg-surface p-5">
+          <h2 className="text-sm font-semibold text-ink">Origen de campaña</h2>
+          <div className="mt-1 divide-y divide-line-soft">
+            {attributionRows.map(([label, value]) => (
+              <ContactRow key={label} label={label}>
+                <span title={value}>{value}</span>
+              </ContactRow>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 rounded-xl border border-line bg-surface p-5">
         <label className="mb-1 block text-sm font-semibold text-ink">Etapa comercial</label>
         <select
@@ -259,7 +295,9 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
         <RescheduleDialog
           currentVisitAt={lead.visitAt}
           pending={setVisit.isPending}
-          onSubmit={(visitAt, note) => run(() => setVisit.mutateAsync({ id: lead.id, status: "reprogramada", visitAt, note }))}
+          onSubmit={(visitAt, note) =>
+            run(() => setVisit.mutateAsync({ id: lead.id, status: "reprogramada", visitAt, note }))
+          }
           onClose={() => setDialog(null)}
         />
       )}
