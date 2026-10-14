@@ -89,17 +89,19 @@ function LeadRow({ lead, active, onClick }: { lead: LandingLead; active: boolean
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="truncate font-semibold text-ink">{lead.contactName}</span>
-        <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
-          {lead.tags[0] && <TagChip tag={lead.tags[0]} />}
-          {lead.programa}
-        </span>
+        <span className="shrink-0 text-xs text-muted">{lead.programa}</span>
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="truncate text-sm text-ink-soft">
           <Icon name="calendario" size={13} className="mr-1 inline -translate-y-px text-muted" />
           {formatVisit(lead.visitAt)}
         </span>
-        <VisitStatusBadge status={lead.visitStatus} />
+        {/* La landing de origen (tag) en vez de "Solicitada", que es el estado
+            de todo lead recien llegado y no aporta; el resto de estados si. */}
+        <span className="flex shrink-0 items-center gap-1.5">
+          {lead.tags[0] && <TagChip tag={lead.tags[0]} />}
+          {lead.visitStatus !== "solicitada" && <VisitStatusBadge status={lead.visitStatus} />}
+        </span>
       </div>
     </button>
   );
