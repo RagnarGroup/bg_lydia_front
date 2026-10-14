@@ -31,6 +31,7 @@ export interface LandingLead {
   sede: string;
   ciudad: string;
   programa: string;
+  tags: string[];
   visitAt: string;
   visitStatus: VisitStatus;
   stage: LeadStage;
@@ -62,6 +63,7 @@ export interface LandingCalendarEvent {
 
 export interface LandingLeadDetail extends LandingLead {
   observations: string | null;
+  attribution: Record<string, string> | null;
   activities: LandingActivity[];
   calendarEvents: LandingCalendarEvent[];
 }

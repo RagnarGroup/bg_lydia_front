@@ -54,3 +54,12 @@ export function NewBadge() {
     </span>
   );
 }
+
+// LYD-87: etiqueta de campana (ej. AUPAIR_USA).
+export function TagChip({ tag }: { tag: string }) {
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
+      {tag}
+    </span>
+  );
+}
