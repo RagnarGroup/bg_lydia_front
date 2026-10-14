@@ -56,10 +56,17 @@ export function NewBadge() {
 }
 
 // LYD-87: etiqueta de campana (ej. AUPAIR_USA).
+// AUPAIR -> "Aupair", INSCRIPCIONES -> "Inscripciones": el tag se guarda en
+// mayusculas (categoria del formulario de origen), se muestra legible.
+function tagLabel(tag: string) {
+  const words = tag.toLowerCase().split("_");
+  return words.map((w, i) => (i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(" ");
+}
+
 export function TagChip({ tag }: { tag: string }) {
   return (
     <span className="inline-flex shrink-0 items-center rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
-      {tag}
+      {tagLabel(tag)}
     </span>
   );
 }
