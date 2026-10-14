@@ -50,7 +50,7 @@ export function useLandingLeads(filters: LandingLeadFilters = {}, enabled = true
     select: (data) => data.leads,
     enabled: LYDIA_API_ENABLED && enabled,
     retry: false,
-    refetchInterval: 20_000,
+    refetchInterval: 15_000,
   });
 }
 
@@ -61,7 +61,10 @@ export function useLandingSummary() {
     select: (data) => data.summary,
     enabled: LYDIA_API_ENABLED,
     retry: false,
-    refetchInterval: 30_000,
+    // Alimenta la alerta de lead nuevo (useNewLandingLeadAlerts): sigue
+    // consultando aunque la pestana este en segundo plano.
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
   });
 }
 

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useConversations } from "@/lib/queries/conversations";
 import { useLandingSummary } from "@/lib/queries/landing-leads";
+import { useNewLandingLeadAlerts } from "@/lib/hooks/useNewLandingLeadAlerts";
 import { Icon, type IconName } from "./icons";
 import packageJson from "../../package.json";
 
@@ -140,8 +141,10 @@ export function NavRail() {
   // 15s, no agrega requests aparte cuando el inbox esta abierto).
   const { data: conversations } = useConversations();
   const unreadTotal = (conversations ?? []).reduce((sum, c) => sum + c.unreadCount, 0);
-  // LYD-84: leads de Landing sin responsable (cola compartida), pollea cada 30 s.
+  // LYD-84: leads de Landing sin responsable (cola compartida), pollea cada 15 s
+  // y suena cuando entra uno nuevo, en cualquier seccion.
   const { data: landingSummary } = useLandingSummary();
+  useNewLandingLeadAlerts(landingSummary);
   const landingUnclaimed = landingSummary?.unclaimed ?? 0;
   const badgeFor = (section: NavSection) =>
     section.id === "comunicaciones" ? unreadTotal + landingUnclaimed : 0;

@@ -7,6 +7,7 @@ import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { LANDING_SEDE_STORAGE_KEY } from "@/lib/landing/format";
 import { LANDING_SEDES, type VisitStatus } from "@/lib/landing/types";
 import { useLandingLeads, useLandingSummary } from "@/lib/queries/landing-leads";
+import { requestNotificationPermissionIfNeeded } from "@/lib/notifications";
 import { LandingCalendar } from "./LandingCalendar";
 import { LandingLeadDetail } from "./LandingLeadDetail";
 import { LandingLeadList } from "./LandingLeadList";
@@ -50,6 +51,11 @@ export function LandingView() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // En mobile se alterna entre lista y detalle (mismo patron que el inbox de chat).
   const [mobileView, setMobileView] = useState<"list" | "detail">("list");
+
+  // Permiso para el aviso del navegador cuando entra un lead (mismo criterio que el inbox de chat).
+  useEffect(() => {
+    requestNotificationPermissionIfNeeded();
+  }, []);
 
   // Se lee tras montar (no en el useState inicial) para no desajustar la hidratacion.
   useEffect(() => {
