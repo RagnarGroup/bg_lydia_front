@@ -1,24 +1,43 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { getLeadsByStage, incomingRequests, leads as mockLeads, pipelineStages, sumBudget } from "@/lib/mock-data";
+import {
+  getAgentById,
+  getLeadsByStage,
+  incomingRequests,
+  leads as mockLeads,
+  pipelineStages,
+  sumBudget,
+} from "@/lib/mock-data";
 import type { Lead, PipelineStageId } from "@/lib/types";
 import { formatCurrency, formatNumber } from "@/lib/format";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { useEscapeKey } from "@/lib/hooks/useEscapeKey";
 import { useCreateLead, useLeads } from "@/lib/queries/leads";
+import { useAgents } from "@/lib/queries/conversations";
+import {
+  campaignPeriodFor,
+  formatLimaDateTime,
+  isInPeriod,
+  limaDayKey,
+  listCampaignPeriods,
+} from "@/lib/campaign-period";
+import { buildCsv, downloadCsv } from "@/lib/leads-export";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { PipelineColumn } from "./PipelineColumn";
 import { LeadCard } from "./LeadCard";
 import { IncomingRequestCard } from "./IncomingRequestCard";
 import { NewLeadModal } from "./NewLeadModal";
+import { LeadsDailyDashboard } from "./LeadsDailyDashboard";
 
 const MOCK_AGENT_ID = "mafer";
+const ALL_PERIODS = "todas";
 
 export function PipelineBoard() {
   const { data: realLeads = [], error: leadsError } = useLeads();
   const isMockMode = !LYDIA_API_ENABLED || leadsError !== null;
   const createLead = useCreateLead();
+  const { data: realAgents = [] } = useAgents();
   const { agent } = useAuth();
   // LYD-2: en modo mock seguimos filtrando contra el agente de ejemplo
   // (los datos de mock-data.ts usan ids tipo "mafer"); en modo real es el
@@ -36,9 +55,22 @@ export function PipelineBoard() {
   useEscapeKey(filterMenuOpen, () => setFilterMenuOpen(false));
   useEscapeKey(menuOpen, () => setMenuOpen(false));
   const [modalStage, setModalStage] = useState<PipelineStageId | null>(null);
+  // LYD-91: periodo de campana (20 al 19, hora de Lima); por defecto el actual.
+  const [periodKey, setPeriodKey] = useState<string>(() => campaignPeriodFor(new Date()).key);
+  const [view, setView] = useState<"tablero" | "dashboard">("tablero");
+
+  const periods = useMemo(() => {
+    const oldest = leadList.reduce<string | null>(
+      (min, lead) => (!min || lead.createdAt < min ? lead.createdAt : min),
+      null,
+    );
+    return listCampaignPeriods(new Date(), oldest);
+  }, [leadList]);
+  const selectedPeriod = periods.find((p) => p.key === periodKey) ?? null;
 
   const filteredLeads = useMemo(() => {
     return leadList.filter((lead) => {
+      if (selectedPeriod && !isInPeriod(lead.createdAt, selectedPeriod)) return false;
       if (onlyMine && lead.assignedAgentId !== CURRENT_AGENT_ID) return false;
       if (search.trim()) {
         const query = search.trim().toLowerCase();
@@ -46,13 +78,46 @@ export function PipelineBoard() {
       }
       return true;
     });
-  }, [leadList, onlyMine, search]);
+  }, [leadList, onlyMine, search, selectedPeriod, CURRENT_AGENT_ID]);
 
   const filteredIncoming = useMemo(() => {
     if (!search.trim()) return incomingRequests;
     const query = search.trim().toLowerCase();
     return incomingRequests.filter((r) => r.contactName.toLowerCase().includes(query));
   }, [search]);
+
+  // LYD-91: exporta lo que se ve (periodo + responsable + busqueda), no toda la base.
+  const handleExport = () => {
+    setMenuOpen(false);
+    const header = [
+      "Lead",
+      "Nombre",
+      "Teléfono",
+      "Email",
+      "Empresa",
+      "Origen",
+      "Etapa",
+      "Responsable",
+      "Presupuesto (S/)",
+      "Fecha de ingreso",
+    ];
+    const rows = filteredLeads.map((lead) => [
+      lead.leadNumber,
+      lead.contactName,
+      lead.phone,
+      lead.email,
+      lead.company,
+      lead.source,
+      pipelineStages.find((s) => s.id === lead.stage)?.label ?? lead.stage,
+      (isMockMode
+        ? getAgentById(lead.assignedAgentId)?.name
+        : realAgents.find((a) => a.id === lead.assignedAgentId)?.name) ?? "Sin asignar",
+      lead.budgetAmount,
+      formatLimaDateTime(lead.createdAt),
+    ]);
+    const suffix = selectedPeriod ? `${selectedPeriod.key}_al_${campaignPeriodEndKey(selectedPeriod.end)}` : "todas";
+    downloadCsv(`leads_${suffix}.csv`, buildCsv(header, rows));
+  };
 
   const handleCreateLead = (data: {
     contactName: string;
@@ -142,6 +207,38 @@ export function PipelineBoard() {
           )}
         </div>
 
+        <select
+          value={selectedPeriod ? periodKey : ALL_PERIODS}
+          onChange={(e) => setPeriodKey(e.target.value)}
+          aria-label="Periodo de campaña"
+          className="rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink-soft focus:border-brand focus:outline-none"
+        >
+          {periods.map((p, i) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+              {i === 0 ? " (actual)" : ""}
+            </option>
+          ))}
+          <option value={ALL_PERIODS}>Todas las fechas</option>
+        </select>
+
+        <div className="flex rounded-md border border-line p-0.5 text-sm" role="tablist" aria-label="Vista">
+          {(["tablero", "dashboard"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              role="tab"
+              aria-selected={view === v}
+              onClick={() => setView(v)}
+              className={`rounded px-2.5 py-1 font-medium ${
+                view === v ? "bg-brand text-white" : "text-ink-soft hover:bg-bg-subtle"
+              }`}
+            >
+              {v === "tablero" ? "Tablero" : "Dashboard"}
+            </button>
+          ))}
+        </div>
+
         <div className="relative min-w-[220px] flex-1">
           <svg
             width="16"
@@ -166,7 +263,7 @@ export function PipelineBoard() {
 
         <div className="ml-auto flex items-center gap-3">
           <p className="text-sm text-ink-soft">
-            {formatNumber(leadList.length)} leads: {formatCurrency(sumBudget(leadList))}
+            {formatNumber(filteredLeads.length)} leads: {formatCurrency(sumBudget(filteredLeads))}
           </p>
 
           <div className="relative">
@@ -192,10 +289,11 @@ export function PipelineBoard() {
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={() => setMenuOpen(false)}
-                  className="block w-full px-3 py-1.5 text-left text-ink-soft hover:bg-bg-subtle"
+                  onClick={handleExport}
+                  disabled={filteredLeads.length === 0}
+                  className="block w-full px-3 py-1.5 text-left text-ink-soft hover:bg-bg-subtle disabled:cursor-not-allowed disabled:text-muted-2"
                 >
-                  Exportar leads
+                  Exportar leads ({formatNumber(filteredLeads.length)})
                 </button>
                 <button
                   type="button"
@@ -219,54 +317,58 @@ export function PipelineBoard() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-x-auto">
-        <PipelineColumn
-          title="LEADS ENTRANTES"
-          subtitle={`Solicitudes: ${incomingRequests.length}`}
-          isEmpty={filteredIncoming.length === 0}
-        >
-          {filteredIncoming.map((request) => (
-            <IncomingRequestCard key={request.id} request={request} />
-          ))}
-        </PipelineColumn>
+      {view === "dashboard" ? (
+        <LeadsDailyDashboard leads={filteredLeads} period={selectedPeriod} />
+      ) : (
+        <div className="flex flex-1 overflow-x-auto">
+          <PipelineColumn
+            title="LEADS ENTRANTES"
+            subtitle={`Solicitudes: ${incomingRequests.length}`}
+            isEmpty={filteredIncoming.length === 0}
+          >
+            {filteredIncoming.map((request) => (
+              <IncomingRequestCard key={request.id} request={request} />
+            ))}
+          </PipelineColumn>
 
-        {pipelineStages
-          .filter((stage) => stage.id !== "venta_perdida")
-          .map((stage) => {
-            const stageLeads = getLeadsByStage(filteredLeads, stage.id);
+          {pipelineStages
+            .filter((stage) => stage.id !== "venta_perdida")
+            .map((stage) => {
+              const stageLeads = getLeadsByStage(filteredLeads, stage.id);
+              return (
+                <PipelineColumn
+                  key={stage.id}
+                  title={stage.label.toUpperCase()}
+                  subtitle={`${stageLeads.length} Clientes Potenciales: ${formatCurrency(sumBudget(stageLeads))}`}
+                  accentColor={stage.color}
+                  quickActionLabel={stage.id === "contacto_inicial" ? "Lead rápido" : undefined}
+                  onQuickAction={() => setModalStage(stage.id)}
+                  isEmpty={stageLeads.length === 0}
+                >
+                  {stageLeads.map((lead) => (
+                    <LeadCard key={lead.id} lead={lead} />
+                  ))}
+                </PipelineColumn>
+              );
+            })}
+
+          {(() => {
+            const perdidos = getLeadsByStage(filteredLeads, "venta_perdida");
             return (
               <PipelineColumn
-                key={stage.id}
-                title={stage.label.toUpperCase()}
-                subtitle={`${stageLeads.length} Clientes Potenciales: ${formatCurrency(sumBudget(stageLeads))}`}
-                accentColor={stage.color}
-                quickActionLabel={stage.id === "contacto_inicial" ? "Lead rápido" : undefined}
-                onQuickAction={() => setModalStage(stage.id)}
-                isEmpty={stageLeads.length === 0}
+                title="VENTA PERDIDA"
+                subtitle={`${perdidos.length} Clientes Potenciales: ${formatCurrency(sumBudget(perdidos))}`}
+                accentColor="bg-danger"
+                isEmpty={perdidos.length === 0}
               >
-                {stageLeads.map((lead) => (
+                {perdidos.map((lead) => (
                   <LeadCard key={lead.id} lead={lead} />
                 ))}
               </PipelineColumn>
             );
-          })}
-
-        {(() => {
-          const perdidos = getLeadsByStage(filteredLeads, "venta_perdida");
-          return (
-            <PipelineColumn
-              title="VENTA PERDIDA"
-              subtitle={`${perdidos.length} Clientes Potenciales: ${formatCurrency(sumBudget(perdidos))}`}
-              accentColor="bg-danger"
-              isEmpty={perdidos.length === 0}
-            >
-              {perdidos.map((lead) => (
-                <LeadCard key={lead.id} lead={lead} />
-              ))}
-            </PipelineColumn>
-          );
-        })()}
-      </div>
+          })()}
+        </div>
+      )}
 
       {modalStage && (
         <NewLeadModal
@@ -278,4 +380,9 @@ export function PipelineBoard() {
       )}
     </section>
   );
+}
+
+// Ultimo dia (inclusive) del periodo, para el nombre del archivo: end es exclusivo.
+function campaignPeriodEndKey(end: Date): string {
+  return limaDayKey(end.getTime() - 86_400_000);
 }
