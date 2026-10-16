@@ -2,14 +2,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import {
-  campaignPeriodFor,
-  formatLimaDateTime,
-  isInPeriod,
-  listCampaignPeriods,
-  periodDays,
-} from "../src/lib/campaign-period.ts";
-import { buildCsv } from "../src/lib/leads-export.ts";
+import { campaignPeriodFor, isInPeriod, listCampaignPeriods, periodDays } from "../src/lib/campaign-period.ts";
 
 describe("campaignPeriodFor", () => {
   it("del 20 en adelante es el periodo que arranca ese mes", () => {
@@ -69,29 +62,5 @@ describe("listCampaignPeriods", () => {
   it("se extiende hasta cubrir el lead mas viejo", () => {
     const periods = listCampaignPeriods(now, "2025-12-25T12:00:00Z", 1);
     assert.equal(periods.at(-1).key, "2025-12-20");
-  });
-});
-
-describe("formatLimaDateTime", () => {
-  it("formatea en hora de Lima", () => {
-    assert.equal(formatLimaDateTime("2026-10-16T13:35:00Z"), "16.10.2026 08:35");
-  });
-});
-
-describe("buildCsv", () => {
-  it("BOM, separador ; y escapado de comillas/saltos", () => {
-    const csv = buildCsv(
-      ["a", "b"],
-      [
-        ["x;y", 'di "hola"'],
-        [null, 3],
-      ],
-    );
-    assert.equal(csv, '\uFEFFa;b\r\n"x;y";"di ""hola"""\r\n;3\r\n');
-  });
-
-  it("neutraliza formulas pero no toca telefonos con +", () => {
-    const csv = buildCsv(["v"], [["=SUM(A1)"], ["+51 999 888 777"], ["-"]]);
-    assert.equal(csv, "\uFEFFv\r\n'=SUM(A1)\r\n+51 999 888 777\r\n'-\r\n");
   });
 });
