@@ -15,14 +15,8 @@ import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { useEscapeKey } from "@/lib/hooks/useEscapeKey";
 import { useCreateLead, useLeads } from "@/lib/queries/leads";
 import { useAgents } from "@/lib/queries/conversations";
-import {
-  campaignPeriodFor,
-  formatLimaDateTime,
-  isInPeriod,
-  limaDayKey,
-  listCampaignPeriods,
-} from "@/lib/campaign-period";
-import { buildCsv, downloadCsv } from "@/lib/leads-export";
+import { campaignPeriodFor, isInPeriod, limaDayKey, listCampaignPeriods } from "@/lib/campaign-period";
+import { buildXlsx, downloadXlsx } from "@/lib/leads-export";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { PipelineColumn } from "./PipelineColumn";
 import { LeadCard } from "./LeadCard";
@@ -89,17 +83,17 @@ export function PipelineBoard() {
   // LYD-91: exporta lo que se ve (periodo + responsable + busqueda), no toda la base.
   const handleExport = () => {
     setMenuOpen(false);
-    const header = [
-      "Lead",
-      "Nombre",
-      "Teléfono",
-      "Email",
-      "Empresa",
-      "Origen",
-      "Etapa",
-      "Responsable",
-      "Presupuesto (S/)",
-      "Fecha de ingreso",
+    const columns = [
+      { header: "Lead", width: 12 },
+      { header: "Nombre", width: 28 },
+      { header: "Teléfono", width: 18 },
+      { header: "Email", width: 28 },
+      { header: "Empresa", width: 20 },
+      { header: "Origen", width: 22 },
+      { header: "Etapa", width: 20 },
+      { header: "Responsable", width: 18 },
+      { header: "Presupuesto (S/)", width: 16 },
+      { header: "Fecha de ingreso", width: 18 },
     ];
     const rows = filteredLeads.map((lead) => [
       lead.leadNumber,
@@ -113,10 +107,10 @@ export function PipelineBoard() {
         ? getAgentById(lead.assignedAgentId)?.name
         : realAgents.find((a) => a.id === lead.assignedAgentId)?.name) ?? "Sin asignar",
       lead.budgetAmount,
-      formatLimaDateTime(lead.createdAt),
+      new Date(lead.createdAt),
     ]);
     const suffix = selectedPeriod ? `${selectedPeriod.key}_al_${campaignPeriodEndKey(selectedPeriod.end)}` : "todas";
-    downloadCsv(`leads_${suffix}.csv`, buildCsv(header, rows));
+    downloadXlsx(`leads_${suffix}.xlsx`, buildXlsx("Leads", columns, rows));
   };
 
   const handleCreateLead = (data: {

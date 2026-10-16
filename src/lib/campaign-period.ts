@@ -102,10 +102,3 @@ export function periodDays(period: CampaignPeriod): PeriodDay[] {
   }
   return days;
 }
-
-// "16.10.2026 08:35" en hora de Lima, para el export.
-export function formatLimaDateTime(iso: string): string {
-  const d = limaWall(iso);
-  const date = `${pad2(d.getUTCDate())}.${pad2(d.getUTCMonth() + 1)}.${d.getUTCFullYear()}`;
-  return `${date} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
-}
