@@ -98,6 +98,18 @@ export interface EvoInstance {
   number: string | null;
 }
 
+// GET /tiktok/channels -- LYD-95. Nunca trae tokens; `status` ya considera el refresh token vencido.
+export type TiktokChannelStatus = "connected" | "reauth_required";
+export interface EvoTiktokChannel {
+  instanceName: string;
+  businessId: string;
+  username: string | null;
+  displayName: string | null;
+  status: TiktokChannelStatus;
+  accessTokenExpiresAt: string;
+  refreshTokenExpiresAt: string;
+}
+
 // GET/PATCH /crm/welcome-message?instanceName=... -- LYD-35.
 // GET/PUT /crm/bot?instanceName=... -- LYD-47/48. Mismo shape que
 // bot-flow.validation.ts del back (BotGraph/BotNode/BotEdge).

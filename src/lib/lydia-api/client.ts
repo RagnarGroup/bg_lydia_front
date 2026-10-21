@@ -19,6 +19,7 @@ import type {
   EvoQuoted,
   EvoSendMediaInput,
   EvoTemplateGroup,
+  EvoTiktokChannel,
   EvoBotFlow,
   EvoBotGraph,
   LeadStage,
@@ -442,6 +443,15 @@ export async function resolveWhatsappInstanceName(): Promise<string | null> {
       (i.integration === "WHATSAPP-BAILEYS" || i.integration === "WHATSAPP-BUSINESS") && i.connectionStatus === "open",
   );
   return whatsapp?.name ?? null;
+}
+
+// LYD-95: canal TikTok. La URL de autorizacion la arma el back (con `state` anti-CSRF); el navegador solo redirige.
+export async function getTiktokAuthorizeUrl(): Promise<{ url: string }> {
+  return evoFetch<{ url: string }>(`/tiktok/authorize-url?type=account`);
+}
+
+export async function listTiktokChannels(): Promise<EvoTiktokChannel[]> {
+  return evoFetch<EvoTiktokChannel[]>(`/tiktok/channels`);
 }
 
 // LYD-48: Bot reemplaza a la pantalla de mensaje de bienvenida -- GET/PUT

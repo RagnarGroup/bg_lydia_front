@@ -43,6 +43,7 @@ const topEntries: NavEntry[] = [
       { label: "Inbox de chat", href: "/comunicaciones/inbox-chat", icon: "chat" },
       { label: "Landing", href: "/comunicaciones/landing", icon: "landing" },
       { label: "Chats de equipo", href: "/comunicaciones/chats-equipo", icon: "equipo" },
+      { label: "Canales", href: "/comunicaciones/canales", icon: "ajustes", adminOnly: true },
     ],
   },
   {
@@ -146,8 +147,7 @@ export function NavRail() {
   const { data: landingSummary } = useLandingSummary();
   useNewLandingLeadAlerts(landingSummary);
   const landingUnclaimed = landingSummary?.unclaimed ?? 0;
-  const badgeFor = (section: NavSection) =>
-    section.id === "comunicaciones" ? unreadTotal + landingUnclaimed : 0;
+  const badgeFor = (section: NavSection) => (section.id === "comunicaciones" ? unreadTotal + landingUnclaimed : 0);
 
   const isSectionOpen = (section: NavSection) => {
     if (section.alwaysOpen) return true;

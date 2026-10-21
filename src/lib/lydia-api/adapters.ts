@@ -33,6 +33,7 @@ function jidToPhone(remoteJid: string): string {
 export function channelFromIntegration(integration: string): InboxConversation["inboxChannel"] {
   if (integration === "FACEBOOK-MESSENGER") return "messenger";
   if (integration === "INSTAGRAM") return "instagram";
+  if (integration === "TIKTOK") return "tiktok";
   return "whatsapp";
 }
 
