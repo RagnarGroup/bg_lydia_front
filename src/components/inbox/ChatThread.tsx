@@ -11,6 +11,7 @@ import { ChannelBadge } from "./ChannelBadge";
 import { Icon } from "@/components/icons";
 import { isOutsideSessionWindow, sessionWindowHours } from "@/lib/lydia-api/session-window";
 import { useTiktokChannels } from "@/lib/queries/tiktok";
+import type { PendingSend } from "@/lib/queries/conversations";
 
 interface Props {
   conversation: InboxConversation;
@@ -23,6 +24,7 @@ interface Props {
   onReact: (message: InboxMessage, emoji: string) => void;
   onForward: (message: InboxMessage, targetConversationId: string) => void;
   sending: boolean;
+  pendingSends?: PendingSend[];
   onEditContact: (name: string, phone: string) => void;
   onLoadOlder?: () => void | Promise<void>;
   loadingOlder?: boolean;
@@ -56,6 +58,7 @@ export function ChatThread({
   onReact,
   onForward,
   sending,
+  pendingSends = [],
   onEditContact,
   onLoadOlder,
   loadingOlder = false,
@@ -90,6 +93,11 @@ export function ChatThread({
       lastMessageIdRef.current = lastId;
     }
   }, [thread]);
+
+  const pendingCount = pendingSends.length;
+  useEffect(() => {
+    if (pendingCount > 0) bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [pendingCount]);
 
   // LYD-60: llevar el hilo hasta el mensaje elegido en el buscador. Va
   // despues del efecto de arriba a proposito: al abrir el chat, primero baja
@@ -264,6 +272,25 @@ export function ChatThread({
               </div>
             </div>
           ))}
+        {!isLoading && !error && pendingSends.length > 0 && (
+          <div className="mt-2 flex flex-col items-end gap-0.5">
+            {pendingSends.map((send) => (
+              <div
+                key={send.id}
+                className={`max-w-md whitespace-pre-line rounded-lg px-3 py-1.5 text-sm leading-relaxed ${
+                  send.status === "error"
+                    ? "border border-danger/40 bg-danger/10 text-danger"
+                    : "bg-brand/60 text-white"
+                }`}
+              >
+                <p className="line-clamp-3">{send.label}</p>
+                <p className="text-right text-xs opacity-80">
+                  {send.status === "error" ? `No se envió${send.error ? `: ${send.error}` : ""}` : "Enviando…"}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
@@ -296,7 +323,10 @@ export function ChatThread({
           </p>
         </div>
       )}
+      {/* LYD-98: una instancia por chat, para que el estado de envio y el
+          borrador de uno no se arrastren al siguiente. */}
       <Composer
+        key={conversation.id}
         conversationId={conversation.id}
         onSend={onSend}
         onSendMedia={onSendMedia}
