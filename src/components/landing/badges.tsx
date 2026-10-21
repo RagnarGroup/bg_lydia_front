@@ -17,6 +17,20 @@ export function SedeChip({ sede, size = "md" }: { sede: string; size?: "md" | "l
   );
 }
 
+// LYD-100: lead sin visita a sede (landing internacional). Ocupa el lugar del
+// chip de sede, con color propio para distinguirlo de un vistazo.
+export function ConsultaChip({ size = "md" }: { size?: "md" | "lg" }) {
+  const sizing = size === "lg" ? "px-3 py-1 text-sm" : "px-2 py-0.5 text-xs";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border border-violet-300 bg-violet-50 font-bold uppercase tracking-wide text-violet-700 ${sizing}`}
+    >
+      <span className="h-2 w-2 rounded-full bg-violet-500" />
+      Consulta
+    </span>
+  );
+}
+
 export function VisitStatusBadge({ status }: { status: VisitStatus }) {
   const meta = VISIT_STATUS_META[status];
   return (

@@ -40,6 +40,7 @@ function toQueryString(filters: LandingLeadFilters): string {
   if (filters.to) query.set("to", filters.to);
   if (filters.unclaimed) query.set("unclaimed", "true");
   if (filters.search) query.set("search", filters.search);
+  if (filters.tipo) query.set("tipo", filters.tipo);
   return query.toString();
 }
 

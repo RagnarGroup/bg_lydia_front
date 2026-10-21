@@ -13,7 +13,7 @@ import {
   startOfLimaWeek,
   VISIT_STATUS_META,
 } from "@/lib/landing/format";
-import type { LandingLead, LandingSummary } from "@/lib/landing/types";
+import { CONSULTAS_FILTER, type LandingLead, type LandingSummary } from "@/lib/landing/types";
 import { useLandingLeads } from "@/lib/queries/landing-leads";
 import { SedeFilter } from "./LandingLeadList";
 
@@ -24,22 +24,26 @@ interface Props {
   onOpenLead: (id: string) => void;
 }
 
-function VisitCard({ lead, onOpen }: { lead: LandingLead; onOpen: () => void }) {
-  const meta = VISIT_STATUS_META[lead.visitStatus];
+// Solo las visitas tienen fecha: las consultas (LYD-100) no llegan al calendario.
+type VisitLead = LandingLead & { visitAt: string };
+
+function VisitCard({ lead, onOpen }: { lead: VisitLead; onOpen: () => void }) {
+  const meta = lead.visitStatus ? VISIT_STATUS_META[lead.visitStatus] : undefined;
+  const sede = lead.sede ?? "";
   const cancelled = lead.visitStatus === "cancelada";
   return (
     <button
       type="button"
       onClick={onOpen}
-      title={`${lead.contactName} · ${lead.sede} · ${meta?.label ?? lead.visitStatus}`}
+      title={`${lead.contactName} · ${sede} · ${meta?.label ?? lead.visitStatus ?? ""}`}
       className={`flex w-full flex-col gap-0.5 rounded-md border-l-4 px-2 py-1.5 text-left text-xs shadow-sm transition-opacity hover:opacity-80 ${
         meta?.block ?? ""
       }`}
     >
       <span className="flex items-center gap-1.5 font-bold">
         {formatLimaTime(lead.visitAt)}
-        <span className={`h-2 w-2 rounded-full ${sedeStyle(lead.sede).dot}`} />
-        <span className="truncate text-[10px] font-semibold uppercase">{lead.sede}</span>
+        <span className={`h-2 w-2 rounded-full ${sedeStyle(sede).dot}`} />
+        <span className="truncate text-[10px] font-semibold uppercase">{sede}</span>
       </span>
       <span className={`truncate font-semibold ${cancelled ? "line-through" : ""}`}>{lead.contactName}</span>
       <span className="truncate text-[11px] opacity-80">
@@ -60,12 +64,14 @@ export function LandingCalendar({ sede, onSedeChange, summary, onOpenLead }: Pro
     data: leads = [],
     isLoading,
     error,
-  } = useLandingLeads({ sede: sede === "todas" ? undefined : sede, from, to });
+  } = useLandingLeads({ sede: sede === "todas" || sede === CONSULTAS_FILTER ? undefined : sede, from, to });
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addLimaDays(weekStart, i)), [weekStart]);
   const byDay = useMemo(() => {
-    const map = new Map<string, LandingLead[]>();
-    for (const lead of [...leads].sort((a, b) => a.visitAt.localeCompare(b.visitAt))) {
+    const map = new Map<string, VisitLead[]>();
+    // Solo visitas: las consultas (LYD-100) no tienen fecha y no van al calendario.
+    const visits = leads.filter((l): l is VisitLead => Boolean(l.visitAt));
+    for (const lead of visits.sort((a, b) => a.visitAt.localeCompare(b.visitAt))) {
       const key = limaDateKey(lead.visitAt);
       map.set(key, [...(map.get(key) ?? []), lead]);
     }
@@ -109,7 +115,7 @@ export function LandingCalendar({ sede, onSedeChange, summary, onOpenLead }: Pro
             {isLoading ? "Cargando…" : `${leads.length} ${leads.length === 1 ? "visita" : "visitas"}`}
           </span>
         </div>
-        <SedeFilter sede={sede} onSedeChange={onSedeChange} summary={summary} />
+        <SedeFilter sede={sede} onSedeChange={onSedeChange} summary={summary} showConsultas={false} />
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           {Object.entries(VISIT_STATUS_META).map(([key, m]) => (
             <span key={key} className="flex items-center gap-1 text-[11px] text-ink-soft">

@@ -5,7 +5,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { LANDING_SEDE_STORAGE_KEY } from "@/lib/landing/format";
-import { LANDING_SEDES, type VisitStatus } from "@/lib/landing/types";
+import { CONSULTAS_FILTER, LANDING_SEDES, type VisitStatus } from "@/lib/landing/types";
 import { useLandingLeads, useLandingSummary } from "@/lib/queries/landing-leads";
 import { requestNotificationPermissionIfNeeded } from "@/lib/notifications";
 import { LandingCalendar } from "./LandingCalendar";
@@ -77,7 +77,9 @@ export function LandingView() {
     error,
   } = useLandingLeads(
     {
-      sede: sede === "todas" ? undefined : sede,
+      // LYD-100: "Consultas" no es una sede: filtra los leads sin visita.
+      sede: sede === "todas" || sede === CONSULTAS_FILTER ? undefined : sede,
+      tipo: sede === CONSULTAS_FILTER ? "consulta" : undefined,
       visitStatus: visitStatus === "todos" ? undefined : visitStatus,
       unclaimed: unclaimedOnly,
       search: debouncedSearch || undefined,
