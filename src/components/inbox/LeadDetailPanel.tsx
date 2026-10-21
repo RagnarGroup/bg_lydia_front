@@ -13,6 +13,7 @@ import { useCreateLead, useLeads, useUpdateLead } from "@/lib/queries/leads";
 import { NotesSection } from "./NotesSection";
 import { AgentAssistantPanel } from "./AgentAssistantPanel";
 import { ChannelBadge } from "./ChannelBadge";
+import { campaignLabel, sourceOf } from "@/lib/attribution";
 
 export type SidePanelView = "detalle" | "agente";
 
@@ -143,6 +144,25 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
             {CHANNEL_META[conversation.inboxChannel].label}
           </p>
           <p className="text-xs text-muted">Canal por donde llegó la conversación</p>
+
+          {/* LYD-96: fuente y campaña/anuncio de origen del lead. */}
+          {(sourceOf(conversation) || conversation.attribution) && (
+            <div className="mt-3 rounded-md border border-line-soft bg-bg-subtle px-2.5 py-2">
+              <p className="text-xs font-medium text-muted">Origen del lead</p>
+              <p className="mt-0.5 text-sm font-semibold text-ink-soft">{sourceOf(conversation)}</p>
+              {conversation.attribution && (
+                <>
+                  <p className="mt-0.5 break-words text-xs text-ink-soft">
+                    {conversation.attribution.source === "TikTok" ? "Campaña" : "Anuncio"}:{" "}
+                    {campaignLabel(conversation.attribution)}
+                  </p>
+                  {conversation.attribution.headline && (
+                    <p className="break-all text-[11px] text-muted">ID: {conversation.attribution.campaign}</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="mt-4">
             <label className="mb-1 block text-xs font-medium text-muted">Estado lead</label>

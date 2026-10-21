@@ -5,6 +5,8 @@
  * antes daba Chatwoot.
  */
 
+import type { LeadAttribution } from "@/lib/attribution";
+
 export type ChatStatus = "open" | "pending" | "resolved";
 export type AgentRole = "asesor" | "administrador";
 
@@ -56,6 +58,8 @@ export interface EvoConversation {
   integration: string;
   // LYD-74: etiquetas del agente IA ({ intencion, decisor, accion, fuente }).
   agentTags?: Record<string, string> | null;
+  // LYD-96: origen del lead (anuncio de Meta o codigo [TT-...]) -- ver lib/attribution.ts.
+  attribution?: LeadAttribution | null;
 }
 
 // LYD-60: GET /crm/conversations/search?q= -- mensajes cuyo texto/caption
