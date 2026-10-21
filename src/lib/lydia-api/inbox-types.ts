@@ -5,6 +5,8 @@
  * -- sigue pendiente (ver CRM-9, CRM-12).
  */
 
+import type { LeadAttribution } from "@/lib/attribution";
+
 export interface InboxAgent {
   id: string;
   name: string;
@@ -107,6 +109,8 @@ export interface InboxConversation {
   inboxChannel: InboxChannel;
   // LYD-74: etiquetas del agente IA por grupo (ver TAG_GROUPS en AgentAssistantPanel).
   agentTags?: Record<string, string>;
+  // LYD-96: origen del lead (fuente + campana/anuncio).
+  attribution?: LeadAttribution;
 }
 
 // LYD-74: una linea del chat de la asesora con el agente IA.

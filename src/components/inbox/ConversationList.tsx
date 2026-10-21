@@ -10,6 +10,7 @@ import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { useAgents, useMessageSearch } from "@/lib/queries/conversations";
 import { contactMatches } from "@/lib/highlight";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { campaignOptions, matchesOrigin } from "@/lib/attribution";
 
 type StatusFilter = "todos" | "abierto" | "sin_respuesta" | "cerrado";
 type ChannelFilter = InboxChannel | "todos";
@@ -72,6 +73,16 @@ export function ConversationList({
   const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
   useEscapeKey(ownerMenuOpen, () => setOwnerMenuOpen(false));
 
+  // LYD-96: filtros por fuente (etiqueta comercial) y campana/anuncio, locales como el resto.
+  const [activeSource, setActiveSource] = useState("todas");
+  const [activeCampaign, setActiveCampaign] = useState("todas");
+  const sourceOptions = useMemo(
+    () => [...new Set(conversations.map((c) => c.agentTags?.fuente ?? c.attribution?.source).filter(Boolean))].sort(),
+    [conversations],
+  ) as string[];
+  const campaigns = useMemo(() => campaignOptions(conversations, activeSource), [conversations, activeSource]);
+  const hasOrigins = sourceOptions.length > 0 || campaigns.length > 0;
+
   const { agent: currentAgent } = useAuth();
   const { data: agents = [] } = useAgents();
   const ownerFilters = useMemo(
@@ -101,10 +112,11 @@ export function ConversationList({
       if (query && !contactMatches(query, conversation.contact.name, conversation.contact.phone)) return false;
       if (activeChannel !== "todos" && conversation.inboxChannel !== activeChannel) return false;
       if (!matchesOwner(conversation)) return false;
+      if (!matchesOrigin(conversation, activeSource, activeCampaign)) return false;
       if (activeFilter === "todos") return true;
       return conversation.status === activeFilter;
     });
-  }, [conversations, query, activeFilter, activeChannel, matchesOwner]);
+  }, [conversations, query, activeFilter, activeChannel, activeSource, activeCampaign, matchesOwner]);
 
   // LYD-60: los resultados de mensajes respetan el filtro de canal y de
   // estado igual que la lista -- si no, un click abriria un chat que no esta
@@ -117,6 +129,7 @@ export function ConversationList({
       const conversation = conversationById.get(hit.conversationId);
       if (!conversation) return false; // p.ej. archivada o todavia no cargada en la lista
       if (!matchesOwner(conversation)) return false;
+      if (!matchesOrigin(conversation, activeSource, activeCampaign)) return false;
       return activeFilter === "todos" || conversation.status === activeFilter;
     });
   }, [
@@ -126,6 +139,8 @@ export function ConversationList({
     messageSearch.data,
     activeChannel,
     activeFilter,
+    activeSource,
+    activeCampaign,
     conversationById,
     matchesOwner,
   ]);
@@ -304,6 +319,41 @@ export function ConversationList({
           <span className="h-1 w-1 rounded-full bg-muted-2" />
         </div>
       </div>
+
+      {/* LYD-96: filtro por fuente y por campaña/anuncio (solo si ya hay conversaciones con origen). */}
+      {hasOrigins && (
+        <div className="flex items-center gap-2 border-b border-line-soft px-3 py-2">
+          <select
+            value={activeSource}
+            aria-label="Filtrar por fuente"
+            onChange={(e) => {
+              setActiveSource(e.target.value);
+              setActiveCampaign("todas");
+            }}
+            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-ink-soft focus:border-brand focus:outline-none"
+          >
+            <option value="todas">Todas las fuentes</option>
+            {sourceOptions.map((source) => (
+              <option key={source} value={source}>
+                {source}
+              </option>
+            ))}
+          </select>
+          <select
+            value={activeCampaign}
+            aria-label="Filtrar por campaña o anuncio"
+            onChange={(e) => setActiveCampaign(e.target.value)}
+            className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-ink-soft focus:border-brand focus:outline-none"
+          >
+            <option value="todas">Todas las campañas</option>
+            {campaigns.map((option) => (
+              <option key={option.campaign} value={option.campaign}>
+                {option.label} · {option.total}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="scroll-slim flex-1 overflow-y-auto">
         {isLoading && <p className="px-4 py-6 text-center text-sm text-muted">Cargando conversaciones…</p>}
