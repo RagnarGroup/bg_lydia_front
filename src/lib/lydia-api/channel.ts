@@ -15,4 +15,5 @@ export const CHANNEL_FILTERS: { id: InboxChannel | "todos"; label: string }[] = 
   { id: "whatsapp", label: CHANNEL_META.whatsapp.label },
   { id: "messenger", label: CHANNEL_META.messenger.label },
   { id: "instagram", label: CHANNEL_META.instagram.label },
+  { id: "tiktok", label: CHANNEL_META.tiktok.label },
 ];

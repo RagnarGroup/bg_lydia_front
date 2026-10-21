@@ -9,6 +9,8 @@ import { Composer, type ComposerAudioInput, type ComposerMediaInput, type Compos
 import { EditContactMenu } from "./EditContactMenu";
 import { ChannelBadge } from "./ChannelBadge";
 import { Icon } from "@/components/icons";
+import { isOutsideSessionWindow, sessionWindowHours } from "@/lib/lydia-api/session-window";
+import { useTiktokChannels } from "@/lib/queries/tiktok";
 
 interface Props {
   conversation: InboxConversation;
@@ -165,8 +167,14 @@ export function ChatThread({
   }, []);
 
   const lastInboundAt = findLastInboundAt(thread);
-  const outsideSessionWindow =
-    thread.length > 0 && lastInboundAt !== null && now - new Date(lastInboundAt).getTime() > SESSION_WINDOW_MS;
+  // LYD-95: TikTok da 48 h, Meta 24 h; ademas TikTok bloquea si la cuenta requiere reautorizacion.
+  const isTiktok = conversation.inboxChannel === "tiktok";
+  const windowHours = sessionWindowHours(conversation.inboxChannel);
+  const { data: tiktokChannels = [] } = useTiktokChannels();
+  const tiktokNeedsReauth =
+    isTiktok &&
+    tiktokChannels.some((c) => c.instanceName === conversation.instanceName && c.status === "reauth_required");
+  const outsideSessionWindow = isOutsideSessionWindow(conversation.inboxChannel, lastInboundAt, thread.length > 0, now);
   const unknownSessionWindow = thread.length > 0 && lastInboundAt === null;
   // Solo WhatsApp tiene plantillas aprobadas; Messenger/Instagram no.
   const hasTemplates = conversation.inboxChannel === "whatsapp";
@@ -263,9 +271,19 @@ export function ChatThread({
         <div className="flex items-start gap-2 border-t border-line-soft bg-accent/10 px-4 py-2.5 text-xs text-accent-dark">
           <Icon name="ajustes" size={14} className="mt-0.5 shrink-0" />
           <p>
-            Pasaron más de 24 h desde el último mensaje del contacto
-            {lastInboundAt && ` (${formatLeadCardDate(lastInboundAt)})`}. Meta bloquea el envío de texto libre fuera de
-            esa ventana — esperá a que te escriba de nuevo{hasTemplates && " o usá una plantilla aprobada"}.
+            Pasaron más de {windowHours} h desde el último mensaje del contacto
+            {lastInboundAt && ` (${formatLeadCardDate(lastInboundAt)})`}. {isTiktok ? "TikTok" : "Meta"} bloquea el
+            envío fuera de esa ventana — esperá a que te escriba de nuevo
+            {hasTemplates && " o usá una plantilla aprobada"}.
+          </p>
+        </div>
+      )}
+      {tiktokNeedsReauth && (
+        <div className="flex items-start gap-2 border-t border-line-soft bg-danger/10 px-4 py-2.5 text-xs text-danger">
+          <Icon name="ajustes" size={14} className="mt-0.5 shrink-0" />
+          <p>
+            La cuenta de TikTok requiere reautorización: no se pueden enviar mensajes hasta que un administrador la
+            vuelva a conectar en Comunicaciones &gt; Canales.
           </p>
         </div>
       )}
@@ -273,7 +291,8 @@ export function ChatThread({
         <div className="flex items-start gap-2 border-t border-line-soft bg-accent/10 px-4 py-2.5 text-xs text-accent-dark">
           <Icon name="ajustes" size={14} className="mt-0.5 shrink-0" />
           <p>
-            No tenemos registro del último mensaje del contacto; si pasaron más de 24 h, Meta puede rechazar el envío.
+            No tenemos registro del último mensaje del contacto; si pasaron más de {windowHours} h,{" "}
+            {isTiktok ? "TikTok" : "Meta"} puede rechazar el envío.
           </p>
         </div>
       )}
@@ -282,7 +301,8 @@ export function ChatThread({
         onSend={onSend}
         onSendMedia={onSendMedia}
         onSendAudio={onSendAudio}
-        disabled={sending || !conversation.id || outsideSessionWindow}
+        disabled={sending || !conversation.id || outsideSessionWindow || tiktokNeedsReauth}
+        textAndImageOnly={isTiktok}
         replyingTo={replyingTo}
         onCancelReply={() => setReplyingTo(null)}
         onAskAgent={onAskAgent}
@@ -293,11 +313,10 @@ export function ChatThread({
 }
 
 // LYD-54: "standard messaging window" de Meta -- misma regla de 24 h en
-// WhatsApp, Messenger e Instagram (LYD-26). Difiere por canal lo que se puede
-// hacer fuera de ella: WhatsApp admite plantillas aprobadas; Messenger e
-// Instagram no, hay que esperar a que el contacto escriba (LYD-82).
-const SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
-
+// WhatsApp, Messenger e Instagram (LYD-26); TikTok da 48 h (LYD-95, ver
+// session-window.ts). Difiere por canal lo que se puede hacer fuera de ella:
+// WhatsApp admite plantillas aprobadas; el resto no, hay que esperar a que el
+// contacto escriba (LYD-82).
 function findLastInboundAt(thread: InboxMessage[]): string | null {
   for (let i = thread.length - 1; i >= 0; i--) {
     if (thread[i].direction === "inbound") return thread[i].sentAt;

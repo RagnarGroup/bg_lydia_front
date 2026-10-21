@@ -50,6 +50,9 @@ interface Props {
   // LYD-73: texto elegido en el chat del agente ("Usar") para revisar aca.
   // `id` cambia en cada envio para poder reusar el mismo texto dos veces.
   injectedText?: { id: number; text: string } | null;
+  // LYD-95: TikTok solo admite texto o una imagen por mensaje -- se ocultan nota de voz y adjuntos que no
+  // sean imagen.
+  textAndImageOnly?: boolean;
 }
 
 // Mismo breakpoint que `lg` de Tailwind: debajo, el panel del lead esta oculto.
@@ -92,6 +95,7 @@ export function Composer({
   onCancelReply,
   onAskAgent,
   injectedText = null,
+  textAndImageOnly = false,
 }: Props) {
   const [value, setValue] = useState("");
   const [highlighted, setHighlighted] = useState(0);
@@ -288,6 +292,11 @@ export function Composer({
     const file = e.target.files?.[0];
     e.target.value = ""; // permite elegir el mismo archivo dos veces seguidas
     if (!file || disabled || isSending) return;
+
+    if (textAndImageOnly && !file.type.startsWith("image/")) {
+      setError("TikTok solo permite enviar texto o una imagen");
+      return;
+    }
 
     setError(null);
     setIsSending(true);
@@ -490,22 +499,26 @@ export function Composer({
                     ref={fileInputRef}
                     type="file"
                     onChange={handleFileChange}
-                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                    accept={
+                      textAndImageOnly ? "image/*" : "image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                    }
                     className="hidden"
                   />
-                  <button
-                    type="button"
-                    aria-label="Nota de voz"
-                    disabled={disabled || isSending}
-                    onClick={startRecording}
-                    className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                      <path d="M19 10v2a7 7 0 01-14 0v-2" />
-                      <line x1="12" y1="19" x2="12" y2="23" />
-                    </svg>
-                  </button>
+                  {!textAndImageOnly && (
+                    <button
+                      type="button"
+                      aria-label="Nota de voz"
+                      disabled={disabled || isSending}
+                      onClick={startRecording}
+                      className="hover:text-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                        <path d="M19 10v2a7 7 0 01-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
