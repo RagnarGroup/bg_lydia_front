@@ -1,4 +1,4 @@
-import type { LandingActivity, LandingSede, VisitStatus } from "./types";
+import type { ConsultaDetalle, LandingActivity, LandingSede, VisitStatus } from "./types";
 
 // LYD-84: helpers de la seccion Landing. Todo lo de fecha/hora se calcula a
 // mano sobre America/Lima (UTC-5 fijo, Peru no tiene horario de verano) en
@@ -211,12 +211,24 @@ function metaValue(type: LandingActivity["type"], value: string | null | undefin
   return value;
 }
 
+// LYD-100: "Lima · 4 weeks · May 2027" a partir del detalle de una consulta.
+export function consultaResumen(detalle: ConsultaDetalle | undefined): string {
+  if (!detalle) return "";
+  return [detalle.opcion, detalle.mesInicio].filter(Boolean).join(" · ");
+}
+
 export function describeActivity(activity: LandingActivity): string {
   const who = activity.agent?.name ?? "Alguien";
   const { from, to } = activity.meta ?? {};
   switch (activity.type) {
     case "creado":
-      return "Lead recibido desde el formulario web";
+      return activity.meta?.tipo === "consulta"
+        ? `Consulta recibida desde la landing${consultaResumen(activity.meta.detalle) ? `: ${consultaResumen(activity.meta.detalle)}` : ""}`
+        : "Lead recibido desde el formulario web";
+    case "consulta": {
+      const resumen = consultaResumen(activity.meta?.detalle);
+      return `Nueva consulta del mismo correo${resumen ? `: ${resumen}` : ""}`;
+    }
     case "tomado":
       return activity.meta?.auto ? `${who} tomó el lead (asignado al cambiar la visita)` : `${who} tomó el lead`;
     case "liberado":

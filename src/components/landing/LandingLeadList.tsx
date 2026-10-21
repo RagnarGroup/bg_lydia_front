@@ -1,11 +1,11 @@
 "use client";
 
 import type { LandingLead, LandingSummary, VisitStatus } from "@/lib/landing/types";
-import { LANDING_SEDES, VISIT_STATUSES } from "@/lib/landing/types";
+import { CONSULTAS_FILTER, LANDING_SEDES, VISIT_STATUSES } from "@/lib/landing/types";
 import { formatVisit, sedeStyle, visitStatusLabel } from "@/lib/landing/format";
 import { formatRelativeTime } from "@/lib/format";
 import { Icon } from "@/components/icons";
-import { AgentDot, NewBadge, SedeChip, TagChip, VisitStatusBadge } from "./badges";
+import { AgentDot, ConsultaChip, NewBadge, SedeChip, TagChip, VisitStatusBadge } from "./badges";
 
 interface Props {
   leads: LandingLead[];
@@ -29,17 +29,25 @@ export function SedeFilter({
   sede,
   onSedeChange,
   summary,
+  showConsultas = true,
 }: {
   sede: string;
   onSedeChange: (sede: string) => void;
   summary?: LandingSummary;
+  // LYD-100: las consultas no tienen sede ni fecha; el calendario no las muestra.
+  showConsultas?: boolean;
 }) {
-  const options = ["todas", ...LANDING_SEDES];
+  const options: string[] = ["todas", ...LANDING_SEDES, ...(showConsultas ? [CONSULTAS_FILTER] : [])];
   return (
     <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por sede">
       {options.map((option) => {
         const active = sede === option;
-        const free = option === "todas" ? summary?.unclaimed : summary?.bySede[option]?.unclaimed;
+        const free =
+          option === "todas"
+            ? summary?.unclaimed
+            : option === CONSULTAS_FILTER
+              ? summary?.consultas?.unclaimed
+              : summary?.bySede[option]?.unclaimed;
         return (
           <button
             key={option}
@@ -52,8 +60,12 @@ export function SedeFilter({
                 : "border-line bg-surface text-ink-soft hover:border-brand/40 hover:text-ink"
             }`}
           >
-            {option !== "todas" && <span className={`h-2 w-2 rounded-full ${sedeStyle(option).dot}`} />}
-            {option === "todas" ? "Todas" : option}
+            {option === CONSULTAS_FILTER ? (
+              <span className="h-2 w-2 rounded-full bg-violet-500" />
+            ) : (
+              option !== "todas" && <span className={`h-2 w-2 rounded-full ${sedeStyle(option).dot}`} />
+            )}
+            {option === "todas" ? "Todas" : option === CONSULTAS_FILTER ? "Consultas" : option}
             {free ? (
               <span
                 title="Sin tomar"
@@ -81,7 +93,7 @@ function LeadRow({ lead, active, onClick }: { lead: LandingLead; active: boolean
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <SedeChip sede={lead.sede} />
+        {lead.sede ? <SedeChip sede={lead.sede} /> : <ConsultaChip />}
         <div className="flex items-center gap-2">
           {lead.assignedAgent ? <AgentDot agent={lead.assignedAgent} size={22} /> : <NewBadge />}
           <span className="text-xs text-muted">{formatRelativeTime(lead.createdAt)}</span>
@@ -92,15 +104,19 @@ function LeadRow({ lead, active, onClick }: { lead: LandingLead; active: boolean
         <span className="shrink-0 text-xs text-muted">{lead.programa}</span>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm text-ink-soft">
-          <Icon name="calendario" size={13} className="mr-1 inline -translate-y-px text-muted" />
-          {formatVisit(lead.visitAt)}
-        </span>
+        {lead.visitAt ? (
+          <span className="truncate text-sm text-ink-soft">
+            <Icon name="calendario" size={13} className="mr-1 inline -translate-y-px text-muted" />
+            {formatVisit(lead.visitAt)}
+          </span>
+        ) : (
+          <span className="truncate text-sm text-ink-soft">{lead.email ?? "Sin correo"}</span>
+        )}
         {/* La landing de origen (tag) en vez de "Solicitada", que es el estado
             de todo lead recien llegado y no aporta; el resto de estados si. */}
         <span className="flex shrink-0 items-center gap-1.5">
           {lead.tags[0] && <TagChip tag={lead.tags[0]} />}
-          {lead.visitStatus !== "solicitada" && <VisitStatusBadge status={lead.visitStatus} />}
+          {lead.visitStatus && lead.visitStatus !== "solicitada" && <VisitStatusBadge status={lead.visitStatus} />}
         </span>
       </div>
     </button>

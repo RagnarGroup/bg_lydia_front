@@ -14,7 +14,7 @@ import {
   useSetLandingStage,
   useSetLandingVisit,
 } from "@/lib/queries/landing-leads";
-import { NewBadge, SedeChip, TagChip, VisitStatusBadge } from "./badges";
+import { ConsultaChip, NewBadge, SedeChip, TagChip, VisitStatusBadge } from "./badges";
 import { ConfirmDialog, RescheduleDialog } from "./LandingDialogs";
 
 // LYD-87: orden y etiqueta de los datos de campana que reenvia la landing.
@@ -129,7 +129,9 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
   }
 
   const unclaimed = lead.assignedAgent === null;
-  const isTerminal = TERMINAL.includes(lead.visitStatus);
+  // LYD-100: consulta de una landing sin visita a sede (se atiende por correo).
+  const esConsulta = lead.tipo === "consulta" || !lead.visitStatus || !lead.visitAt;
+  const isTerminal = lead.visitStatus ? TERMINAL.includes(lead.visitStatus) : false;
   const isOwner = lead.assignedAgent?.id === agent?.id;
   const canRelease = !unclaimed && (isOwner || agent?.role === "administrador");
   const wa = whatsappUrl(lead.phone);
@@ -146,8 +148,8 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
 
       <div className="rounded-xl border border-line bg-surface p-5">
         <div className="flex flex-wrap items-center gap-2">
-          <SedeChip sede={lead.sede} size="lg" />
-          <span className="text-sm font-semibold text-ink-soft">{lead.ciudad}</span>
+          {lead.sede ? <SedeChip sede={lead.sede} size="lg" /> : <ConsultaChip size="lg" />}
+          {lead.ciudad && <span className="text-sm font-semibold text-ink-soft">{lead.ciudad}</span>}
           {unclaimed && <NewBadge />}
         </div>
         <h1 className="mt-3 text-xl font-bold text-ink">{lead.contactName}</h1>
@@ -162,16 +164,32 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg bg-bg-subtle px-3.5 py-3">
-          <Icon name="calendario" size={20} className="shrink-0 text-brand" />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted">
-              {lead.visitStatus === "confirmada" ? "Visita confirmada" : "Visita solicitada"}
-            </p>
-            <p className="font-semibold first-letter:uppercase text-ink">{formatVisitLong(lead.visitAt)}</p>
+        {esConsulta || !lead.visitAt || !lead.visitStatus ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg bg-violet-50 px-3.5 py-3">
+            <Icon name="correo" size={20} className="shrink-0 text-violet-600" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted">Consulta sin visita a sede · se responde por correo</p>
+              {lead.email ? (
+                <a href={`mailto:${lead.email}`} className="font-semibold text-ink">
+                  {lead.email}
+                </a>
+              ) : (
+                <p className="font-semibold text-ink">Sin correo</p>
+              )}
+            </div>
           </div>
-          <VisitStatusBadge status={lead.visitStatus} />
-        </div>
+        ) : (
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg bg-bg-subtle px-3.5 py-3">
+            <Icon name="calendario" size={20} className="shrink-0 text-brand" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted">
+                {lead.visitStatus === "confirmada" ? "Visita confirmada" : "Visita solicitada"}
+              </p>
+              <p className="font-semibold first-letter:uppercase text-ink">{formatVisitLong(lead.visitAt)}</p>
+            </div>
+            <VisitStatusBadge status={lead.visitStatus} />
+          </div>
+        )}
 
         {actionError && (
           <p
@@ -188,7 +206,7 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
               Tomar lead
             </ActionButton>
           )}
-          {!isTerminal && lead.visitStatus !== "confirmada" && (
+          {!esConsulta && !isTerminal && lead.visitStatus !== "confirmada" && (
             <ActionButton
               tone={unclaimed ? "default" : "primary"}
               disabled={busy}
@@ -197,22 +215,22 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
               Confirmar visita
             </ActionButton>
           )}
-          {!isTerminal && (
+          {!esConsulta && !isTerminal && (
             <ActionButton disabled={busy} onClick={() => setDialog("reprogramar")}>
               Reprogramar
             </ActionButton>
           )}
-          {!isTerminal && (
+          {!esConsulta && !isTerminal && (
             <ActionButton disabled={busy} onClick={() => changeVisit("asistio")}>
               Asistió
             </ActionButton>
           )}
-          {!isTerminal && (
+          {!esConsulta && !isTerminal && (
             <ActionButton disabled={busy} onClick={() => changeVisit("no_asistio")}>
               No asistió
             </ActionButton>
           )}
-          {!isTerminal && (
+          {!esConsulta && !isTerminal && (
             <ActionButton tone="danger" disabled={busy} onClick={() => setDialog("cancelar")}>
               Cancelar visita
             </ActionButton>
@@ -223,7 +241,7 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
             </ActionButton>
           )}
         </div>
-        {unclaimed && !isTerminal && (
+        {unclaimed && !isTerminal && !esConsulta && (
           <p className="mt-2 text-[11px] text-muted">
             Si confirmás o cambiás la visita de un lead libre, queda asignado a vos.
           </p>
@@ -291,7 +309,7 @@ export function LandingLeadDetail({ leadId, onBack, footer }: Props) {
 
       {footer}
 
-      {dialog === "reprogramar" && (
+      {dialog === "reprogramar" && lead.visitAt && (
         <RescheduleDialog
           currentVisitAt={lead.visitAt}
           pending={setVisit.isPending}

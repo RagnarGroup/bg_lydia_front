@@ -524,6 +524,7 @@ export async function listLandingLeads(filters: LandingLeadFilters = {}): Promis
   if (filters.to) query.set("to", filters.to);
   if (filters.unclaimed) query.set("unclaimed", "true");
   if (filters.search) query.set("search", filters.search);
+  if (filters.tipo) query.set("tipo", filters.tipo);
   const qs = query.toString();
   return evoFetch<LandingLead[]>(`/crm/landing-leads${qs ? `?${qs}` : ""}`);
 }

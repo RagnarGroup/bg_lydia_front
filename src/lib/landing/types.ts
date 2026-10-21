@@ -22,18 +22,26 @@ export interface LandingAgentRef {
   color: string;
 }
 
+// LYD-100: "consulta" = lead de una landing sin visita a sede (Spanish
+// Immersion): sin sede, ciudad, fecha ni estado de visita; se identifica por el correo.
+export type LandingLeadTipo = "visita" | "consulta";
+
+// Valor del filtro de sede que muestra solo las consultas (no es una sede real).
+export const CONSULTAS_FILTER = "consultas";
+
 export interface LandingLead {
   id: string;
   leadNumber: string;
   contactName: string;
   phone: string | null;
   email: string | null;
-  sede: string;
-  ciudad: string;
+  sede: string | null;
+  ciudad: string | null;
   programa: string;
+  tipo: LandingLeadTipo;
   tags: string[];
-  visitAt: string;
-  visitStatus: VisitStatus;
+  visitAt: string | null;
+  visitStatus: VisitStatus | null;
   stage: LeadStage;
   assignedAgent: LandingAgentRef | null;
   createdAt: string;
@@ -42,13 +50,28 @@ export interface LandingLead {
 }
 
 export type LandingActivityType =
-  "creado" | "tomado" | "liberado" | "estado_visita" | "reprogramada" | "nota" | "etapa";
+  "creado" | "tomado" | "liberado" | "estado_visita" | "reprogramada" | "nota" | "etapa" | "consulta";
+
+// LYD-100: datos de una consulta (meta.detalle del historial).
+export interface ConsultaDetalle {
+  opcion?: string;
+  precio?: string;
+  mesInicio?: string;
+  pais?: string;
+  nivel?: string;
+}
 
 export interface LandingActivity {
   id: string;
   type: LandingActivityType;
   content: string | null;
-  meta: { from?: string | null; to?: string | null; auto?: boolean } | null;
+  meta: {
+    from?: string | null;
+    to?: string | null;
+    auto?: boolean;
+    tipo?: string;
+    detalle?: ConsultaDetalle;
+  } | null;
   createdAt: string;
   agent: { id: string; name: string } | null;
 }
@@ -71,6 +94,8 @@ export interface LandingLeadDetail extends LandingLead {
 export interface LandingSummary {
   unclaimed: number;
   bySede: Record<string, { unclaimed: number; total: number }>;
+  // LYD-100: consultas sin sede (el back viejo no lo manda).
+  consultas?: { unclaimed: number; total: number };
 }
 
 export interface LandingLeadFilters {
@@ -80,6 +105,7 @@ export interface LandingLeadFilters {
   to?: string;
   unclaimed?: boolean;
   search?: string;
+  tipo?: LandingLeadTipo;
 }
 
 export interface LandingVisitInput {
