@@ -103,6 +103,23 @@ const MEDIA_KIND_BY_KEY: Record<string, InboxMediaKind> = {
   stickerMessage: "sticker",
 };
 
+// LYD-98: el archivo nunca hace falta en el navegador (se pide aparte por
+// getMediaBase64); los adjuntos salientes viejos todavia lo traen guardado
+// dentro del mensaje (`media`) y pesaban cientos de KB por burbuja.
+function withoutMediaPayload(message: EvoMessage["message"]): EvoMessage["message"] {
+  if (!message) return message;
+  const result: Record<string, unknown> = { ...message };
+  for (const key of Object.keys(MEDIA_KIND_BY_KEY)) {
+    const payload = result[key];
+    if (payload && typeof payload === "object") {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { media, base64, ...rest } = payload as Record<string, unknown>;
+      result[key] = rest;
+    }
+  }
+  return result as EvoMessage["message"];
+}
+
 function detectMedia(raw: EvoMessage): InboxMessageMedia | undefined {
   for (const [key, kind] of Object.entries(MEDIA_KIND_BY_KEY)) {
     const payload = raw.message?.[key] as { caption?: string; fileName?: string; mimetype?: string } | undefined;
@@ -133,7 +150,8 @@ function quotedPreview(message: EvoMessage["message"]): string | null {
 export function adaptMessage(message: EvoMessage, reactions: InboxMessageReaction[] = []): InboxMessage {
   const direction: InboxMessage["direction"] = message.key.fromMe ? "outbound" : "inbound";
   const lastStatus = message.MessageUpdate?.[message.MessageUpdate.length - 1]?.status;
-  const media = detectMedia(message);
+  const lean = { ...message, message: withoutMediaPayload(message.message) };
+  const media = detectMedia(lean);
 
   return {
     id: message.id,
@@ -143,7 +161,7 @@ export function adaptMessage(message: EvoMessage, reactions: InboxMessageReactio
     read: lastStatus === "READ" || lastStatus === "read",
     senderName: message.pushName ?? undefined,
     media,
-    raw: { key: message.key, message: message.message },
+    raw: { key: message.key, message: lean.message },
     quotedPreview: quotedPreview(message.message),
     reactions,
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   AgentChatLine,
   AgentChatResult,
@@ -259,23 +259,38 @@ export interface SendMessageInput {
   quoted?: { key: unknown; message: unknown };
 }
 
-export function useSendMessage(conversationId: string | null) {
+// LYD-98: los tres envios llevan el conversationId en las variables (no en el
+// hook) y comparten SEND_MUTATION_KEY, para que el estado "enviando" sea por
+// conversacion (usePendingSends): mientras sale una nota de voz en un chat, la
+// asesora puede responder otros. El onSuccess espera el refetch del hilo para
+// que la burbuja pendiente no desaparezca antes de que llegue el mensaje real.
+const SEND_MUTATION_KEY = ["send"] as const;
+
+type SendTarget = { conversationId: string };
+
+function useSendMutation<TInput>(path: string, toBody: (input: TInput) => unknown) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: string | SendMessageInput) => {
-      const body = typeof input === "string" ? { content: input } : input;
-      return fetchJson<{ ok: true }>(`/api/lydia/conversations/${conversationId}/messages`, {
+    mutationKey: SEND_MUTATION_KEY,
+    mutationFn: ({ conversationId, input }: SendTarget & { input: TInput }) =>
+      fetchJson<{ ok: true }>(`/api/lydia/conversations/${conversationId}/${path}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
+        body: JSON.stringify(toBody(input)),
+      }),
+    onSuccess: (_data, { conversationId }) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["messages", conversationId] }),
+        queryClient.invalidateQueries({ queryKey: ["conversations"] }),
+      ]),
   });
+}
+
+export function useSendMessage() {
+  return useSendMutation<string | SendMessageInput>("messages", (input) =>
+    typeof input === "string" ? { content: input } : input,
+  );
 }
 
 export interface SendMediaInput {
@@ -287,21 +302,8 @@ export interface SendMediaInput {
   quoted?: { key: unknown; message: unknown };
 }
 
-export function useSendMedia(conversationId: string | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: SendMediaInput) =>
-      fetchJson<{ ok: true }>(`/api/lydia/conversations/${conversationId}/media`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-  });
+export function useSendMedia() {
+  return useSendMutation<SendMediaInput>("media", (input) => input);
 }
 
 // LYD-53: nota de voz grabada en el navegador.
@@ -310,21 +312,51 @@ export interface SendAudioInput {
   quoted?: { key: unknown; message: unknown };
 }
 
-export function useSendAudio(conversationId: string | null) {
-  const queryClient = useQueryClient();
+export function useSendAudio() {
+  return useSendMutation<SendAudioInput>("audio", (input) => input);
+}
 
-  return useMutation({
-    mutationFn: (input: SendAudioInput) =>
-      fetchJson<{ ok: true }>(`/api/lydia/conversations/${conversationId}/audio`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
+export interface PendingSend {
+  id: number;
+  status: "pending" | "error";
+  label: string;
+  error: string | null;
+}
+
+function pendingSendLabel(input: unknown): string {
+  if (typeof input === "string") return input;
+  if (input && typeof input === "object") {
+    if ("content" in input) return String(input.content);
+    if ("audio" in input) return "Nota de voz";
+    if ("fileName" in input && input.fileName) return String(input.fileName);
+  }
+  return "Archivo adjunto";
+}
+
+// LYD-98: envios en curso o fallidos de una conversacion, para pintarlos en
+// el hilo aunque la asesora haya cambiado de chat mientras salian.
+export function usePendingSends(conversationId: string | null): PendingSend[] {
+  const sends = useMutationState({
+    filters: { mutationKey: SEND_MUTATION_KEY },
+    select: (mutation) => ({
+      id: mutation.mutationId,
+      status: mutation.state.status,
+      variables: mutation.state.variables as (SendTarget & { input: unknown }) | undefined,
+      error: mutation.state.error,
+    }),
   });
+  return sends
+    .filter(
+      (send): send is typeof send & { status: "pending" | "error" } =>
+        (send.status === "pending" || send.status === "error") &&
+        send.variables?.conversationId === conversationId,
+    )
+    .map((send) => ({
+      id: send.id,
+      status: send.status,
+      label: pendingSendLabel(send.variables?.input),
+      error: send.error instanceof Error ? send.error.message : null,
+    }));
 }
 
 // LYD-52: reaccion rapida con emoji sobre un mensaje puntual (menu contextual).

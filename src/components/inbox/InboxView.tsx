@@ -11,6 +11,7 @@ import {
   useSendAudio,
   useSendMedia,
   useSendMessage,
+  usePendingSends,
   useSendReaction,
   useUpdateConversationContact,
 } from "@/lib/queries/conversations";
@@ -123,9 +124,10 @@ export function InboxView() {
     isLoading: realMessagesLoading,
     error: realMessagesError,
   } = useMessages(isMockMode ? null : selectedConversationId);
-  const sendMessage = useSendMessage(selectedConversationId);
-  const sendMedia = useSendMedia(selectedConversationId);
-  const sendAudio = useSendAudio(selectedConversationId);
+  const sendMessage = useSendMessage();
+  const sendMedia = useSendMedia();
+  const sendAudio = useSendAudio();
+  const pendingSends = usePendingSends(isMockMode ? null : selectedConversationId);
   const sendReaction = useSendReaction(selectedConversationId);
   const forwardMessage = useForwardMessage();
   const markConversationRead = useMarkConversationRead();
@@ -198,11 +200,14 @@ export function InboxView() {
   // LYD-14: Composer espera una promesa que se rechaza si el envio falla,
   // para no borrar el texto ni perder el error en silencio.
   const handleSend = async (text: string, quoted?: ComposerQuoted) => {
+    if (selectedConversationId === null) return;
     if (!isMockMode) {
-      await sendMessage.mutateAsync(quoted ? { content: text, quoted } : text);
+      await sendMessage.mutateAsync({
+        conversationId: selectedConversationId,
+        input: quoted ? { content: text, quoted } : text,
+      });
       return;
     }
-    if (selectedConversationId === null) return;
     const draft: InboxMessage = {
       id: `draft-${Date.now()}`,
       direction: "outbound",
@@ -223,11 +228,11 @@ export function InboxView() {
   // LYD-15: en modo mock no hay a quien mandarle el archivo real -- se deja
   // un draft de texto describiendolo, igual que el resto del mock del inbox.
   const handleSendMedia = async (input: ComposerMediaInput) => {
+    if (selectedConversationId === null) return;
     if (!isMockMode) {
-      await sendMedia.mutateAsync(input);
+      await sendMedia.mutateAsync({ conversationId: selectedConversationId, input });
       return;
     }
-    if (selectedConversationId === null) return;
     const draft: InboxMessage = {
       id: `draft-${Date.now()}`,
       direction: "outbound",
@@ -248,11 +253,11 @@ export function InboxView() {
   // LYD-53: mismo criterio que handleSendMedia -- en mock queda un draft de
   // texto describiendolo, no hay a quien mandarle la nota de voz real.
   const handleSendAudio = async (input: ComposerAudioInput) => {
+    if (selectedConversationId === null) return;
     if (!isMockMode) {
-      await sendAudio.mutateAsync(input);
+      await sendAudio.mutateAsync({ conversationId: selectedConversationId, input });
       return;
     }
-    if (selectedConversationId === null) return;
     const draft: InboxMessage = {
       id: `draft-${Date.now()}`,
       direction: "outbound",
@@ -361,7 +366,8 @@ export function InboxView() {
                 thread={isMockMode ? mockMessages : [...olderMessages, ...realMessages]}
                 isLoading={isMockMode ? false : realMessagesLoading}
                 error={isMockMode ? null : realMessagesError}
-                sending={!isMockMode && (sendMessage.isPending || sendMedia.isPending || sendAudio.isPending)}
+                sending={pendingSends.some((send) => send.status === "pending")}
+                pendingSends={pendingSends}
                 onSend={handleSend}
                 onSendMedia={handleSendMedia}
                 onSendAudio={handleSendAudio}
