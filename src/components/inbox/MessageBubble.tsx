@@ -7,6 +7,7 @@ import { useFetchMediaDataUrl } from "@/lib/queries/conversations";
 import { MessageMedia } from "./MessageMedia";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { ForwardMessageDialog } from "./ForwardMessageDialog";
+import { MessageDetailsDialog } from "./MessageDetailsDialog";
 
 interface Props {
   message: InboxMessage;
@@ -127,6 +128,7 @@ export function MessageBubble({
 }: Props) {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const fetchMediaDataUrl = useFetchMediaDataUrl();
 
   if (message.direction === "system") {
@@ -256,7 +258,16 @@ export function MessageBubble({
           onReact={(emoji) => onReact(message, emoji)}
           onForward={() => setShowForward(true)}
           onDownload={handleDownload}
+          onDetails={() => setShowDetails(true)}
           onClose={() => setMenuPos(null)}
+        />
+      )}
+
+      {showDetails && (
+        <MessageDetailsDialog
+          messageId={message.id}
+          clientName={isOutbound ? undefined : message.senderName}
+          onClose={() => setShowDetails(false)}
         />
       )}
 

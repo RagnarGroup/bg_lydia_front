@@ -323,3 +323,16 @@ export interface EvoAgentInstructions {
   updatedBy: string | null;
   updatedAt: string | null;
 }
+
+// LYD-105: GET /crm/messages/:messageId/details ("Ver detalles" de un mensaje).
+export type EvoMessageSender = "cliente" | "asesora" | "bot" | "bienvenida" | "sin_registro";
+export type EvoDeliveryStatus = "pendiente" | "enviado" | "entregado" | "leido" | "error";
+
+export interface EvoMessageDetails {
+  messageId: string;
+  fromMe: boolean;
+  sentAt: string;
+  sender: EvoMessageSender;
+  agent: { name: string; email: string | null } | null;
+  delivery: EvoDeliveryStatus | null;
+}

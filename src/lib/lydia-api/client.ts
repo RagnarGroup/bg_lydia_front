@@ -11,6 +11,7 @@ import type {
   EvoLead,
   EvoMediaResult,
   EvoMessage,
+  EvoMessageDetails,
   EvoMessageSearchResponse,
   EvoMessagesResponse,
   EvoNote,
@@ -243,6 +244,11 @@ export async function getMediaBase64(
     method: "POST",
     body: JSON.stringify({ message }),
   });
+}
+
+// LYD-105: quien envio un mensaje (autoria de LYD-101) y su estado de entrega.
+export async function getMessageDetails(messageId: string): Promise<EvoMessageDetails> {
+  return evoFetch<EvoMessageDetails>(`/crm/messages/${encodeURIComponent(messageId)}/details`);
 }
 
 export async function listAgents(): Promise<EvoAgent[]> {
