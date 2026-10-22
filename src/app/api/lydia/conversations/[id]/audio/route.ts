@@ -17,8 +17,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   try {
     const conversation = await getConversation(id);
-    await sendAudio(conversation.remoteJid, conversation.instanceName, audio, body.quoted ?? undefined);
-    await autoAssignToSender(id);
+    const sent = await sendAudio(conversation.remoteJid, conversation.instanceName, audio, body.quoted ?? undefined);
+    await autoAssignToSender(id, conversation.instanceName, sent);
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = friendlyMessage(error);

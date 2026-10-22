@@ -18,7 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   try {
     const conversation = await getConversation(id);
-    await sendMedia(
+    const sent = await sendMedia(
       conversation.remoteJid,
       conversation.instanceName,
       {
@@ -30,7 +30,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       },
       body.quoted ?? undefined,
     );
-    await autoAssignToSender(id);
+    await autoAssignToSender(id, conversation.instanceName, sent);
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = friendlyMessage(error);
