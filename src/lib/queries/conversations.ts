@@ -9,6 +9,7 @@ import type {
   InboxMessage,
   InboxMessageSearchHit,
 } from "@/lib/lydia-api/inbox-types";
+import type { EvoMessageDetails } from "@/lib/lydia-api/types";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 
 // LYD-56: antes esto tiraba un Error generico con el status pegado dentro
@@ -48,6 +49,16 @@ export function useConversations(status: "open" | "resolved" | "all" = "all") {
 // LYD-60: busqueda en el texto de los mensajes (back, Postgres). `query` ya
 // llega con debounce desde ConversationList -- aca no se re-debouncea.
 // Sin polling: es una consulta puntual, no algo que tenga que seguir vivo.
+// LYD-105: detalle de un mensaje ("Ver detalles"), solo cuando se abre el modal.
+export function useMessageDetails(messageId: string | null) {
+  return useQuery({
+    queryKey: ["message-details", messageId],
+    queryFn: () => fetchJson<EvoMessageDetails>(`/api/lydia/messages/${messageId}/details`),
+    enabled: LYDIA_API_ENABLED && messageId !== null,
+    retry: false,
+  });
+}
+
 export function useMessageSearch(query: string) {
   const q = query.trim();
   return useQuery({

@@ -20,6 +20,8 @@ interface Props {
   // LYD-64: solo viene cuando el mensaje trae adjunto (foto, video, audio,
   // documento) -- sin eso no se muestra la opcion.
   onDownload?: () => Promise<void>;
+  // LYD-105: abre el modal con quien envio el mensaje.
+  onDetails: () => void;
   onClose: () => void;
 }
 
@@ -36,6 +38,7 @@ export function MessageContextMenu({
   onReply,
   onForward,
   onDownload,
+  onDetails,
   onClose,
 }: Props) {
   const [copied, setCopied] = useState(false);
@@ -152,6 +155,18 @@ export function MessageContextMenu({
               : "Descargar"}
         </button>
       )}
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          onDetails();
+          onClose();
+        }}
+        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-ink-soft hover:bg-bg-subtle"
+      >
+        <Icon name="persona" size={15} />
+        Ver detalles
+      </button>
     </div>
   );
 }
