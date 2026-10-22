@@ -18,6 +18,7 @@ import type {
   EvoQuickReplyTemplate,
   EvoQuoted,
   EvoSendMediaInput,
+  EvoSentMessage,
   EvoTemplateGroup,
   EvoTiktokChannel,
   EvoBotFlow,
@@ -167,8 +168,8 @@ export async function sendMessage(
   instanceName: string,
   text: string,
   quoted?: EvoQuoted,
-): Promise<void> {
-  await evoFetch(`/message/sendText/${instanceName}`, {
+): Promise<EvoSentMessage> {
+  return evoFetch<EvoSentMessage>(`/message/sendText/${instanceName}`, {
     method: "POST",
     body: JSON.stringify({ number: remoteJid, text, quoted }),
   });
@@ -181,8 +182,8 @@ export async function sendMedia(
   instanceName: string,
   input: EvoSendMediaInput,
   quoted?: EvoQuoted,
-): Promise<void> {
-  await evoFetch(`/message/sendMedia/${instanceName}`, {
+): Promise<EvoSentMessage> {
+  return evoFetch<EvoSentMessage>(`/message/sendMedia/${instanceName}`, {
     method: "POST",
     body: JSON.stringify({ number: remoteJid, ...input, quoted }),
   });
@@ -207,10 +208,22 @@ export async function sendAudio(
   instanceName: string,
   audio: string,
   quoted?: EvoQuoted,
-): Promise<void> {
-  await evoFetch(`/message/sendWhatsAppAudio/${instanceName}`, {
+): Promise<EvoSentMessage> {
+  return evoFetch<EvoSentMessage>(`/message/sendWhatsAppAudio/${instanceName}`, {
     method: "POST",
     body: JSON.stringify({ number: remoteJid, audio, quoted }),
+  });
+}
+
+// LYD-101: autoria de un mensaje enviado desde el inbox (auditoria comercial).
+export async function recordMessageAuthor(
+  instanceName: string,
+  messageKeyId: string,
+  agentId: string,
+): Promise<void> {
+  await evoFetch(`/crm/message-authors`, {
+    method: "POST",
+    body: JSON.stringify({ instanceName, messageKeyId, agentId }),
   });
 }
 

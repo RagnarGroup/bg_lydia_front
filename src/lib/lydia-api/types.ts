@@ -183,6 +183,12 @@ export interface EvoQuoted {
   message: unknown;
 }
 
+// LYD-101: lo que devuelven sendText/sendMedia/sendWhatsAppAudio (el mensaje
+// persistido). Solo interesa key.id, para registrar quien lo envio.
+export interface EvoSentMessage {
+  key?: { id?: string };
+}
+
 // POST /message/sendMedia/:instance -- media como base64 o url (SendMediaDto)
 export interface EvoSendMediaInput {
   mediatype: "image" | "document" | "video" | "audio";
