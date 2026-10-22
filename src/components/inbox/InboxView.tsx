@@ -60,15 +60,17 @@ function BackendDownBanner({ error }: { error: Error }) {
   );
 }
 
-export function InboxView() {
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+// LYD-102: initialChatId viene de ?chat=<id> (enlaces del reporte diario de
+// auditoria comercial) y abre esa conversacion directo.
+export function InboxView({ initialChatId = null }: { initialChatId?: string | null }) {
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(initialChatId);
   // LYD-60: mensaje elegido desde la seccion "Mensajes" del buscador -- el
   // hilo hace scroll hasta el y lo resalta. null = abrir el chat normal (abajo).
   const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
   // LYD-18: en mobile el inbox alterna entre lista y chat en vez de apilar
   // las tres columnas (lista + detalle + hilo) -- a partir de `md` siempre
   // se ven ambas y este estado no importa (las clases responsive lo tapan).
-  const [mobileView, setMobileView] = useState<"list" | "thread">("list");
+  const [mobileView, setMobileView] = useState<"list" | "thread">(initialChatId ? "thread" : "list");
   // LYD-73: vista del panel derecho (se mantiene al cambiar de chat), pedido
   // de sugerencia desde el foco del composer y texto elegido en el chat del
   // agente para pasarlo al composer.
