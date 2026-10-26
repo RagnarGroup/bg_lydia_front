@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { getCurrentAgent } from "./getCurrentAgent";
 import type { SessionPayload } from "./session";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 // LYD-69: la seccion "Agente" decide que le dice la IA a los clientes, asi que
 // solo la toca un administrador (en Lydia, los desarrolladores tambien entran
@@ -22,9 +23,7 @@ export async function requireAdmin(): Promise<{ session: SessionPayload } | { re
   return { session };
 }
 
-// Mismo mapeo de errores que el resto de los route handlers de Lydia.
-export function lydiaErrorResponse(error: unknown): NextResponse {
-  const message = error instanceof Error ? error.message : "Error desconocido";
-  const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-  return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+// Mismo mapeo de errores que el resto de los route handlers de Lydia (LYD-110).
+export function lydiaErrorResponse(error: unknown, context = "admin"): NextResponse {
+  return apiErrorResponse(error, context);
 }

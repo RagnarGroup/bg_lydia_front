@@ -3,15 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { EvoPersonalInsights } from "@/lib/lydia-api/types";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(body.error ?? `Error ${res.status}`);
-  }
-  return body as T;
-}
+import { fetchJson } from "./fetch-json";
 
 export function usePersonalInsights(params: { agentId?: string; from?: string; to?: string } = {}) {
   const query = new URLSearchParams();

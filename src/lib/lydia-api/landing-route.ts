@@ -2,8 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { getCurrentAgent } from "@/lib/auth/getCurrentAgent";
 import type { SessionPayload } from "@/lib/auth/session";
-import { friendlyMessage } from "./errors";
-import { LydiaApiError } from "./client";
+import { apiErrorResponse } from "./api-error";
 
 // LYD-84: manejo comun de los route handlers de /api/lydia/landing-leads.
 
@@ -22,15 +21,10 @@ export async function withLandingSession(run: (session: SessionPayload) => Promi
   }
 }
 
-// Los 4xx del back (409 "ya lo tomo X", 403, 404, 400) se propagan tal cual con
-// su mensaje; el resto es 502, y la falta de configuracion 503.
+// Los 4xx del back (409 "ya lo tomo X", 403, 404, 400) conservan su status;
+// el resto es 502, y la falta de configuracion 503 (LYD-110: apiErrorResponse).
 export function landingErrorResponse(error: unknown): Response {
-  if (error instanceof LydiaApiError && error.status >= 400 && error.status < 500) {
-    return NextResponse.json({ error: friendlyMessage(error) }, { status: error.status });
-  }
-  const message = error instanceof Error ? error.message : "Error desconocido";
-  const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-  return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+  return apiErrorResponse(error, "landing-leads", { propagate4xx: true });
 }
 
 export async function readJson(request: Request): Promise<Record<string, unknown> | null> {

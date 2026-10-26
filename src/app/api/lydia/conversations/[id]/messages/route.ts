@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { friendlyMessage } from "@/lib/lydia-api/errors";
 import { getConversation, listMessages, sendMessage } from "@/lib/lydia-api/client";
 import { adaptMessage } from "@/lib/lydia-api/adapters";
 import { autoAssignToSender } from "@/lib/lydia-api/auto-assign";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 function errorResponse(error: unknown) {
-  const message = friendlyMessage(error);
-  const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-  return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+  return apiErrorResponse(error, "/api/lydia/conversations/[id]/messages");
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {

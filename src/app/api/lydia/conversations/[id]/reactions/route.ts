@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getConversation, sendReaction } from "@/lib/lydia-api/client";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 // LYD-52: reaccion rapida con emoji sobre un mensaje puntual del menu
 // contextual. No hace falta remoteJid -- sendReaction va contra el
@@ -22,8 +23,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await sendReaction(conversation.instanceName, key, reaction);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "POST /api/lydia/conversations/[id]/reactions");
   }
 }

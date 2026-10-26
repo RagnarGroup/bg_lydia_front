@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMediaBase64 } from "@/lib/lydia-api/client";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -15,8 +16,6 @@ export async function POST(request: Request) {
     );
     return NextResponse.json({ dataUrl: `data:${media.mimetype};base64,${media.base64}` });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "POST /api/lydia/media");
   }
 }

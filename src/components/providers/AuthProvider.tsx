@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { useRouter } from "next/navigation";
 import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
 import { firebaseAuth, googleProvider } from "@/lib/firebase/client";
+import { fetchJson } from "@/lib/queries/fetch-json";
 
 export interface AuthAgent {
   id: string;
@@ -21,15 +22,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(body.error ?? `Error ${res.status}`);
-  }
-  return body as T;
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();

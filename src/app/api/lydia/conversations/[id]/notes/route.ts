@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { addNote, listNotes } from "@/lib/lydia-api/client";
 import { adaptNote } from "@/lib/lydia-api/adapters";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 function errorResponse(error: unknown) {
-  const message = error instanceof Error ? error.message : "Error desconocido";
-  const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-  return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+  return apiErrorResponse(error, "/api/lydia/conversations/[id]/notes");
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -3,15 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AgentKnowledgeCategory, EvoAgentInstructions, EvoAgentKnowledge } from "@/lib/lydia-api/types";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(body.error ?? `Error ${res.status}`);
-  }
-  return body as T;
-}
+import { fetchJson } from "./fetch-json";
 
 const jsonInit = (method: string, body: unknown): RequestInit => ({
   method,

@@ -9,6 +9,7 @@ import {
 } from "@/lib/lydia-api/client";
 import { adaptConversation } from "@/lib/lydia-api/adapters";
 import { getCurrentAgent } from "@/lib/auth/getCurrentAgent";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,9 +49,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     return NextResponse.json({ conversation: adaptConversation(conversation) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "PATCH /api/lydia/conversations/[id]");
   }
 }
 
@@ -73,8 +72,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     await deleteConversation(id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "DELETE /api/lydia/conversations/[id]");
   }
 }

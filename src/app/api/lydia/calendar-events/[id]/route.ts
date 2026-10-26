@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteCalendarEvent, updateCalendarEvent } from "@/lib/lydia-api/client";
 import { adaptCalendarEvent } from "@/lib/lydia-api/adapters";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,9 +14,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const event = await updateCalendarEvent(id, body);
     return NextResponse.json({ event: adaptCalendarEvent(event) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "PATCH /api/lydia/calendar-events/[id]");
   }
 }
 
@@ -26,8 +25,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     await deleteCalendarEvent(id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "DELETE /api/lydia/calendar-events/[id]");
   }
 }

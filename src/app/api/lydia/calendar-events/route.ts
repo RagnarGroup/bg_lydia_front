@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createCalendarEvent, listCalendarEvents } from "@/lib/lydia-api/client";
 import { adaptCalendarEvent } from "@/lib/lydia-api/adapters";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -13,9 +14,7 @@ export async function GET(request: Request) {
     const events = await listCalendarEvents({ agentId, leadId, from, to });
     return NextResponse.json({ events: events.map(adaptCalendarEvent) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "GET /api/lydia/calendar-events");
   }
 }
 
@@ -29,8 +28,6 @@ export async function POST(request: Request) {
     const event = await createCalendarEvent(body);
     return NextResponse.json({ event: adaptCalendarEvent(event) }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "POST /api/lydia/calendar-events");
   }
 }

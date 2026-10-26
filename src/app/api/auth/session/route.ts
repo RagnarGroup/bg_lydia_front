@@ -3,6 +3,7 @@ import { listAgents } from "@/lib/lydia-api/client";
 import { InvalidIdTokenError, verifyGoogleIdToken } from "@/lib/auth/verifyGoogleIdToken";
 import { SESSION_COOKIE_NAME, createSessionCookie } from "@/lib/auth/session";
 import { getCurrentAgent } from "@/lib/auth/getCurrentAgent";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 dias, igual que el TTL del JWT
 
@@ -26,9 +27,7 @@ export async function POST(request: Request) {
   try {
     agents = await listAgents();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "POST /api/auth/session");
   }
 
   const agent = agents.find((a) => a.active && a.email?.toLowerCase() === identity.email.toLowerCase());

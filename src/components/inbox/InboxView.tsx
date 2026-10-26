@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   LydiaFetchError,
   useConversations,
+  useFetchMediaDataUrl,
   useForwardMessage,
   useLoadOlderMessages,
   useMarkConversationRead,
@@ -132,6 +133,12 @@ export function InboxView({ initialChatId = null }: { initialChatId?: string | n
   const pendingSends = usePendingSends(isMockMode ? null : selectedConversationId);
   const sendReaction = useSendReaction(selectedConversationId);
   const forwardMessage = useForwardMessage();
+  const fetchMediaDataUrl = useFetchMediaDataUrl();
+  // LYD-110: reaccionar y reenviar no tienen composer propio donde mostrar el
+  // fallo -- antes fallaban en silencio. Aviso descartable arriba del inbox.
+  const [actionError, setActionError] = useState<string | null>(null);
+  const reportActionError = (prefix: string) => (error: unknown) =>
+    setActionError(`${prefix}: ${error instanceof Error ? error.message : "intentá de nuevo."}`);
   const markConversationRead = useMarkConversationRead();
   const updateContact = useUpdateConversationContact();
   const loadOlderMessages = useLoadOlderMessages(selectedConversationId);
@@ -282,7 +289,10 @@ export function InboxView({ initialChatId = null }: { initialChatId?: string | n
   // ahi, mismo criterio que el resto de las acciones de solo-lectura del mock.
   const handleReact = (message: InboxMessage, emoji: string) => {
     if (isMockMode) return;
-    sendReaction.mutate({ key: message.raw.key, reaction: emoji });
+    sendReaction.mutate(
+      { key: message.raw.key, reaction: emoji },
+      { onError: reportActionError("No se pudo reaccionar") },
+    );
   };
 
   const handleForward = (message: InboxMessage, targetConversationId: string) => {
@@ -292,40 +302,45 @@ export function InboxView({ initialChatId = null }: { initialChatId?: string | n
       // cacheado por messageId) -- pero forwardMessage no tiene acceso a ese
       // cache de React Query aca, asi que reenviar un adjunto pide primero
       // su base64 igual que hace MessageMedia.tsx.
-      fetch("/api/lydia/media", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...message.media.raw,
-          instanceName: selectedConversation?.instanceName,
-        }),
-      })
-        .then((res) => res.json())
-        .then((data: { dataUrl: string }) => {
-          const base64 = data.dataUrl.slice(data.dataUrl.indexOf(",") + 1);
-          forwardMessage.mutate({
-            targetConversationId,
-            text: "",
-            media: {
-              mediatype:
-                message.media!.kind === "sticker"
-                  ? "image"
-                  : (message.media!.kind as "image" | "document" | "video" | "audio"),
-              media: base64,
-              mimetype: message.media!.mimetype,
-              fileName: message.media!.fileName,
-              caption: message.media!.caption,
+      const media = message.media;
+      fetchMediaDataUrl(message.id, media.raw, selectedConversation?.instanceName ?? "")
+        .then((dataUrl) => {
+          const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+          forwardMessage.mutate(
+            {
+              targetConversationId,
+              text: "",
+              media: {
+                mediatype: media.kind === "sticker" ? "image" : (media.kind as "image" | "document" | "video" | "audio"),
+                media: base64,
+                mimetype: media.mimetype,
+                fileName: media.fileName,
+                caption: media.caption,
+              },
             },
-          });
-        });
+            { onError: reportActionError("No se pudo reenviar") },
+          );
+        })
+        .catch(reportActionError("No se pudo reenviar"));
       return;
     }
-    forwardMessage.mutate({ targetConversationId, text: message.text });
+    forwardMessage.mutate(
+      { targetConversationId, text: message.text },
+      { onError: reportActionError("No se pudo reenviar") },
+    );
   };
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-hidden bg-bg text-ink">
       {isMockMode && (!LYDIA_API_ENABLED ? <MockModeBanner /> : error && <BackendDownBanner error={error} />)}
+      {actionError && (
+        <div className="flex items-center justify-between gap-2 border-b border-danger/30 bg-danger/10 px-4 py-2 text-xs text-danger">
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} className="shrink-0 font-semibold underline hover:no-underline">
+            Cerrar
+          </button>
+        </div>
+      )}
       <div className="flex flex-1 overflow-hidden">
         <div className={`${mobileView === "list" ? "flex" : "hidden"} w-full shrink-0 md:flex md:w-auto`}>
           <ConversationList
