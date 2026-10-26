@@ -4,15 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InboxNote } from "@/lib/lydia-api/inbox-types";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { useAuth } from "@/components/providers/AuthProvider";
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(body.error ?? `Error ${res.status}`);
-  }
-  return body as T;
-}
+import { fetchJson } from "./fetch-json";
 
 // LYD-21: el backend ya tenia listNotes/addNote (CRM-12), sin ningun
 // componente que las consumiera.

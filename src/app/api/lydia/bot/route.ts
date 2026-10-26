@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getBotFlow, resolveWhatsappInstanceName, updateBotFlow } from "@/lib/lydia-api/client";
 import type { EvoBotGraph } from "@/lib/lydia-api/types";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 // LYD-48: mismo criterio que /api/lydia/welcome-message (que reemplaza) --
 // la resolucion de instanceName queda de este lado, el front del bot no
@@ -17,9 +18,7 @@ export async function GET() {
     const flow = await getBotFlow(instanceName);
     return NextResponse.json({ flow: { enabled: flow.enabled, graph: flow.graph, warnings: flow.warnings } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "GET /api/lydia/bot");
   }
 }
 
@@ -40,8 +39,6 @@ export async function PUT(request: Request) {
     });
     return NextResponse.json({ flow: { enabled: flow.enabled, graph: flow.graph, warnings: flow.warnings } });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "PUT /api/lydia/bot");
   }
 }

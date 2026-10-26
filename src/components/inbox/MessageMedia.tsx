@@ -17,15 +17,39 @@ interface Props {
 // necesita ver).
 const AUTO_LOAD_KINDS: InboxMessageMedia["kind"][] = ["image", "sticker", "audio", "video"];
 
+const MEDIA_LABEL: Partial<Record<InboxMessageMedia["kind"], string>> = {
+  image: "la imagen",
+  sticker: "el sticker",
+  audio: "el audio",
+  video: "el video",
+  document: "el documento",
+};
+
 export function MessageMedia({ messageId, media, instanceName }: Props) {
   const [manualLoad, setManualLoad] = useState(false);
   const enabled = AUTO_LOAD_KINDS.includes(media.kind) || manualLoad;
-  const { data: dataUrl, isLoading, error } = useResolveMedia(messageId, media.raw, instanceName, enabled);
+  const { data: dataUrl, isLoading, isFetching, error, refetch } = useResolveMedia(
+    messageId,
+    media.raw,
+    instanceName,
+    enabled,
+  );
 
+  // LYD-110: con "Reintentar" -- muchas veces es un fallo pasajero al bajar la
+  // media de Meta, y antes la unica salida era recargar toda la pagina.
   if (error) {
     return (
-      <p className="text-xs italic text-danger">
-        No se pudo cargar el archivo{media.fileName ? `: ${media.fileName}` : ""}.
+      <p className="flex items-center gap-2 text-xs italic text-danger">
+        No se pudo cargar {MEDIA_LABEL[media.kind] ?? "el archivo"}
+        {media.fileName ? `: ${media.fileName}` : ""}.
+        <button
+          type="button"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="not-italic font-semibold underline hover:no-underline disabled:opacity-50"
+        >
+          {isFetching ? "Cargando..." : "Reintentar"}
+        </button>
       </p>
     );
   }

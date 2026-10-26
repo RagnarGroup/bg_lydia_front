@@ -69,13 +69,18 @@ function getConfig() {
 
 // LYD-84: el status del back (p. ej. el 409 de "ya lo tomo X") tiene que
 // llegar al navegador; el mensaje conserva el formato de siempre.
+// LYD-110: `body` guarda la respuesta completa del back (antes se cortaba a
+// 300 caracteres y el JSON truncado ya no se podia leer) -- solo para logs y
+// para que friendlyMessage reconozca el caso, nunca se muestra tal cual.
 export class LydiaApiError extends Error {
   status: number;
+  body: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, body = "") {
     super(message);
     this.name = "LydiaApiError";
     this.status = status;
+    this.body = body;
   }
 }
 
@@ -94,7 +99,7 @@ async function evoFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new LydiaApiError(res.status, `Lydia API ${res.status} en ${path}: ${body.slice(0, 300)}`);
+    throw new LydiaApiError(res.status, `Lydia API ${res.status} en ${path}: ${body.slice(0, 300)}`, body);
   }
 
   // LYD-40: los DELETE (deleteLead/deleteTemplate/deleteCalendarEvent y

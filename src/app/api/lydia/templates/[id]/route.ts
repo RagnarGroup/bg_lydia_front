@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteTemplate, updateTemplate } from "@/lib/lydia-api/client";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,9 +13,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const template = await updateTemplate(id, body);
     return NextResponse.json({ template });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "PATCH /api/lydia/templates/[id]");
   }
 }
 
@@ -25,8 +24,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     await deleteTemplate(id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "DELETE /api/lydia/templates/[id]");
   }
 }

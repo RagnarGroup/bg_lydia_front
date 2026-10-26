@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createTemplate } from "@/lib/lydia-api/client";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 export async function POST(request: Request, { params }: { params: Promise<{ groupId: string }> }) {
   const { groupId } = await params;
@@ -12,8 +13,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ gro
     const template = await createTemplate(groupId, body);
     return NextResponse.json({ template }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "POST /api/lydia/template-groups/[groupId]/templates");
   }
 }

@@ -3,13 +3,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { EvoTiktokChannel } from "@/lib/lydia-api/types";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
-
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error ?? `Error ${res.status}`);
-  return body as T;
-}
+import { fetchJson } from "./fetch-json";
 
 // LYD-95: cuentas TikTok conectadas y su estado (conectada / requiere reautorizacion).
 export function useTiktokChannels() {

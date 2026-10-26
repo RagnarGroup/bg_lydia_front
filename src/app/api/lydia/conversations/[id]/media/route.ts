@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { friendlyMessage } from "@/lib/lydia-api/errors";
 import { getConversation, sendMedia } from "@/lib/lydia-api/client";
 import { autoAssignToSender } from "@/lib/lydia-api/auto-assign";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 const MEDIA_TYPES = ["image", "document", "video", "audio"] as const;
 
@@ -33,8 +33,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     await autoAssignToSender(id, conversation.instanceName, sent);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = friendlyMessage(error);
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "POST /api/lydia/conversations/[id]/media");
   }
 }

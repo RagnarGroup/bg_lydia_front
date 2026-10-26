@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createLead, listLeads } from "@/lib/lydia-api/client";
 import { adaptLead } from "@/lib/lydia-api/adapters";
 import type { LeadStage } from "@/lib/lydia-api/types";
+import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -14,9 +15,7 @@ export async function GET(request: Request) {
     const leads = await listLeads({ stage, assignedAgentId, source, chatId });
     return NextResponse.json({ leads: leads.map(adaptLead) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "GET /api/lydia/leads");
   }
 }
 
@@ -30,8 +29,6 @@ export async function POST(request: Request) {
     const lead = await createLead(body);
     return NextResponse.json({ lead: adaptLead(lead) }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Error desconocido";
-    const isConfigError = error instanceof Error && error.name === "LydiaApiConfigError";
-    return NextResponse.json({ error: message }, { status: isConfigError ? 503 : 502 });
+    return apiErrorResponse(error, "POST /api/lydia/leads");
   }
 }

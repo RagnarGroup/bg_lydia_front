@@ -10,19 +10,10 @@ import type {
   LandingSummary,
   LandingVisitInput,
 } from "@/lib/landing/types";
-import { LydiaFetchError } from "./conversations";
+import { fetchJson } from "./fetch-json";
 
 // LYD-84: leads del formulario web. El agentId nunca viaja desde aca: los
 // route handlers lo toman de la sesion.
-
-async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new LydiaFetchError(res.status, body.error ?? `Error ${res.status}`);
-  }
-  return body as T;
-}
 
 function post<T>(url: string, body?: unknown): Promise<T> {
   return fetchJson<T>(url, {
