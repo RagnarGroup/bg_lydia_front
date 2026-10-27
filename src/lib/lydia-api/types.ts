@@ -239,18 +239,18 @@ export interface EvoLead {
   updatedAt: string;
   Agent: EvoAgent | null;
   Chat: { id: string; remoteJid: string } | null;
-  // LYD-117: asesoras que escribieron en la conversacion del lead.
+  // LYD-117: porcentaje de participacion de cada asesora en su conversacion.
   participants?: EvoChatParticipant[];
 }
 
-// LYD-117: GET /crm/conversations/:chatId/participants -- asesoras que
-// enviaron mensajes desde el inbox (autoria de LYD-101), primero quien
-// escribio antes. Lo enviado desde el celular no cuenta.
+// LYD-117: GET /crm/conversations/:chatId/participants -- porcentaje de
+// participacion por aporte real que asigna la auditoria diaria de las 21:00
+// (reportDate = dia de esa corrida), de mayor a menor. Vacio si no hay calculo.
 export interface EvoChatParticipant {
   agent: { id: string; name: string; email: string | null; color: string | null };
-  messages: number;
-  firstMessageAt: string;
-  lastMessageAt: string;
+  percent: number;
+  reason: string | null;
+  reportDate: string;
 }
 
 // LYD-9: calendario por agente. GET/POST /crm/calendar-events, PATCH/DELETE /crm/calendar-events/:id

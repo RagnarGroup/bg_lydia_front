@@ -39,15 +39,15 @@ export function useMessageDetails(messageId: string | null) {
   });
 }
 
-// LYD-117: asesoras que escribieron en la conversacion. Se refresca al enviar
-// (useSendMutation) y cada minuto por si escribe otra desde su sesion.
+// LYD-117: porcentaje de participacion de la ultima auditoria diaria. Cambia
+// una vez al dia (21:00), asi que sin polling.
 export function useChatParticipants(conversationId: string, enabled: boolean) {
   return useQuery({
     queryKey: ["chat-participants", conversationId],
     queryFn: () => fetchJson<EvoChatParticipant[]>(`/api/lydia/conversations/${conversationId}/participants`),
     enabled: LYDIA_API_ENABLED && enabled,
     retry: false,
-    refetchInterval: 60_000,
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -282,14 +282,11 @@ function useSendMutation<TInput>(path: string, toBody: (input: TInput) => unknow
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(toBody(input)),
       }),
-    onSuccess: (_data, { conversationId }) => {
-      // LYD-117: sin await -- la burbuja pendiente solo espera el hilo.
-      void queryClient.invalidateQueries({ queryKey: ["chat-participants", conversationId] });
-      return Promise.all([
+    onSuccess: (_data, { conversationId }) =>
+      Promise.all([
         queryClient.invalidateQueries({ queryKey: ["messages", conversationId] }),
         queryClient.invalidateQueries({ queryKey: ["conversations"] }),
-      ]);
-    },
+      ]),
   });
 }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { formatMessageDay, formatMessageTime } from "@/lib/format";
 import { useChatParticipants } from "@/lib/queries/conversations";
 
 interface Props {
@@ -9,9 +8,14 @@ interface Props {
   canUseBackend: boolean;
 }
 
-// LYD-117: asesoras que escribieron en la conversacion, ademas del unico
-// responsable. Sale de la autoria de cada mensaje (LYD-101): lo enviado antes
-// de ese registro o desde el celular no aparece.
+function formatReportDate(reportDate: string): string {
+  const [, month, day] = reportDate.split("-");
+  return `${day}/${month}`;
+}
+
+// LYD-117: porcentaje de participacion de cada asesora segun su aporte real,
+// lo asigna la auditoria diaria de las 21:00 (no cuenta mensajes). Una
+// conversacion sin asesoras ese dia todavia no tiene calculo.
 export function ChatParticipants({ conversationId, assigneeId, canUseBackend }: Props) {
   const { data: participants = [], isLoading, isError } = useChatParticipants(conversationId, canUseBackend);
 
@@ -19,34 +23,35 @@ export function ChatParticipants({ conversationId, assigneeId, canUseBackend }: 
 
   return (
     <div className="mt-4 border-t border-line-soft pt-4">
-      <label className="mb-1 block text-xs font-medium text-muted">Asesoras que participaron</label>
+      <label className="mb-1 block text-xs font-medium text-muted">Participación de asesoras</label>
       {isLoading ? (
         <p className="text-sm text-muted">Cargando...</p>
       ) : isError ? (
         <p className="text-sm text-muted">No se pudo cargar.</p>
       ) : participants.length === 0 ? (
-        <p className="text-sm text-muted">Ninguna asesora escribió desde Lydia todavía.</p>
+        <p className="text-sm text-muted">Sin calcular todavía: se calcula cada día a las 21:00.</p>
       ) : (
-        <ul className="space-y-1.5">
-          {participants.map(({ agent, messages, lastMessageAt }) => (
-            <li key={agent.id} className="flex items-start gap-1.5 text-sm">
-              <span
-                className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand"
-                style={agent.color ? { backgroundColor: agent.color } : undefined}
-              />
-              <div className="min-w-0">
-                <p className="truncate text-ink-soft">
+        <>
+          <ul className="space-y-1">
+            {participants.map(({ agent, percent, reason }) => (
+              <li key={agent.id} className="flex items-center gap-1.5 text-sm" title={reason ?? undefined}>
+                <span
+                  className="h-2 w-2 shrink-0 rounded-full bg-brand"
+                  style={agent.color ? { backgroundColor: agent.color } : undefined}
+                />
+                <span className="min-w-0 truncate text-ink-soft">
                   {agent.name}
                   {agent.id === assigneeId && <span className="ml-1.5 text-[11px] text-muted">(responsable)</span>}
-                </p>
-                <p className="text-[11px] text-muted">
-                  {messages} {messages === 1 ? "mensaje" : "mensajes"} · último {formatMessageDay(lastMessageAt)}{" "}
-                  {formatMessageTime(lastMessageAt)}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
+                </span>
+                <span className="ml-auto font-medium text-ink">{percent}%</span>
+              </li>
+            ))}
+          </ul>
+          {participants[0].reason && <p className="mt-1.5 text-[11px] text-muted">{participants[0].reason}</p>}
+          <p className="mt-1 text-[11px] text-muted">
+            Auditoría del {formatReportDate(participants[0].reportDate)}, 21:00.
+          </p>
+        </>
       )}
     </div>
   );

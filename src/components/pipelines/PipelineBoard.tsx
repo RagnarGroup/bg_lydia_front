@@ -92,7 +92,7 @@ export function PipelineBoard() {
       { header: "Origen", width: 22 },
       { header: "Etapa", width: 20 },
       { header: "Responsable", width: 18 },
-      { header: "Asesoras que participaron", width: 30 },
+      { header: "Participación (%)", width: 30 },
       { header: "Presupuesto (S/)", width: 16 },
       { header: "Fecha de ingreso", width: 18 },
     ];
@@ -107,7 +107,7 @@ export function PipelineBoard() {
       (isMockMode
         ? getAgentById(lead.assignedAgentId)?.name
         : realAgents.find((a) => a.id === lead.assignedAgentId)?.name) ?? "Sin asignar",
-      (lead.participantNames ?? []).join(", "),
+      (lead.participants ?? []).map((p) => `${p.name} ${p.percent}%`).join(", "),
       lead.budgetAmount,
       new Date(lead.createdAt),
     ]);
