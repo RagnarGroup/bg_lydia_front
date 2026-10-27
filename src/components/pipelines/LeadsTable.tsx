@@ -86,6 +86,8 @@ export function LeadsTable() {
               const agentName = isMockMode
                 ? getAgentById(lead.assignedAgentId)?.name
                 : realAgents.find((a) => a.id === lead.assignedAgentId)?.name;
+              // LYD-117: las demas asesoras que escribieron en el chat del lead.
+              const others = (lead.participantNames ?? []).filter((name) => name !== agentName);
               return (
                 <tr key={lead.id} className="hover:bg-surface">
                   <td className="border-b border-line-soft py-2.5 pr-4">
@@ -107,6 +109,11 @@ export function LeadsTable() {
                       </span>
                     ) : (
                       <span className="text-muted">Sin asignar</span>
+                    )}
+                    {others.length > 0 && (
+                      <p className="mt-0.5 text-xs text-muted" title="Otras asesoras que escribieron en el chat">
+                        También: {others.join(", ")}
+                      </p>
                     )}
                   </td>
                   <td className="border-b border-line-soft py-2.5 pr-4 text-ink-soft">

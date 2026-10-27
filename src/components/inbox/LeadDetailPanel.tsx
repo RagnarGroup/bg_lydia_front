@@ -13,6 +13,7 @@ import { useCreateLead, useLeads, useUpdateLead } from "@/lib/queries/leads";
 import { NotesSection } from "./NotesSection";
 import { AgentAssistantPanel } from "./AgentAssistantPanel";
 import { ChannelBadge } from "./ChannelBadge";
+import { ChatParticipants } from "./ChatParticipants";
 import { campaignLabel, sourceOf } from "@/lib/attribution";
 
 export type SidePanelView = "detalle" | "agente";
@@ -250,6 +251,8 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
               </p>
             )}
           </div>
+
+          <ChatParticipants conversationId={conversation.id} assigneeId={assignee?.id} canUseBackend={canUseBackend} />
 
           <NotesSection conversationId={conversation.id} canUseNotes={canUseBackend} />
         </div>

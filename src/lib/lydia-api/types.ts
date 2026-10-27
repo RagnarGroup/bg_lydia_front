@@ -239,6 +239,18 @@ export interface EvoLead {
   updatedAt: string;
   Agent: EvoAgent | null;
   Chat: { id: string; remoteJid: string } | null;
+  // LYD-117: asesoras que escribieron en la conversacion del lead.
+  participants?: EvoChatParticipant[];
+}
+
+// LYD-117: GET /crm/conversations/:chatId/participants -- asesoras que
+// enviaron mensajes desde el inbox (autoria de LYD-101), primero quien
+// escribio antes. Lo enviado desde el celular no cuenta.
+export interface EvoChatParticipant {
+  agent: { id: string; name: string; email: string | null; color: string | null };
+  messages: number;
+  firstMessageAt: string;
+  lastMessageAt: string;
 }
 
 // LYD-9: calendario por agente. GET/POST /crm/calendar-events, PATCH/DELETE /crm/calendar-events/:id

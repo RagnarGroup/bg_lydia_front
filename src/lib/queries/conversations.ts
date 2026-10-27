@@ -9,7 +9,7 @@ import type {
   InboxMessage,
   InboxMessageSearchHit,
 } from "@/lib/lydia-api/inbox-types";
-import type { EvoMessageDetails } from "@/lib/lydia-api/types";
+import type { EvoChatParticipant, EvoMessageDetails } from "@/lib/lydia-api/types";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { fetchJson } from "./fetch-json";
 
@@ -36,6 +36,18 @@ export function useMessageDetails(messageId: string | null) {
     queryFn: () => fetchJson<EvoMessageDetails>(`/api/lydia/messages/${messageId}/details`),
     enabled: LYDIA_API_ENABLED && messageId !== null,
     retry: false,
+  });
+}
+
+// LYD-117: asesoras que escribieron en la conversacion. Se refresca al enviar
+// (useSendMutation) y cada minuto por si escribe otra desde su sesion.
+export function useChatParticipants(conversationId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["chat-participants", conversationId],
+    queryFn: () => fetchJson<EvoChatParticipant[]>(`/api/lydia/conversations/${conversationId}/participants`),
+    enabled: LYDIA_API_ENABLED && enabled,
+    retry: false,
+    refetchInterval: 60_000,
   });
 }
 
@@ -270,11 +282,14 @@ function useSendMutation<TInput>(path: string, toBody: (input: TInput) => unknow
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(toBody(input)),
       }),
-    onSuccess: (_data, { conversationId }) =>
-      Promise.all([
+    onSuccess: (_data, { conversationId }) => {
+      // LYD-117: sin await -- la burbuja pendiente solo espera el hilo.
+      void queryClient.invalidateQueries({ queryKey: ["chat-participants", conversationId] });
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: ["messages", conversationId] }),
         queryClient.invalidateQueries({ queryKey: ["conversations"] }),
-      ]),
+      ]);
+    },
   });
 }
 
@@ -339,8 +354,7 @@ export function usePendingSends(conversationId: string | null): PendingSend[] {
   return sends
     .filter(
       (send): send is typeof send & { status: "pending" | "error" } =>
-        (send.status === "pending" || send.status === "error") &&
-        send.variables?.conversationId === conversationId,
+        (send.status === "pending" || send.status === "error") && send.variables?.conversationId === conversationId,
     )
     .map((send) => ({
       id: send.id,
@@ -454,4 +468,3 @@ export function useFetchMediaDataUrl() {
     return data.dataUrl;
   };
 }
-

@@ -20,6 +20,7 @@ import type {
   EvoQuoted,
   EvoSendMediaInput,
   EvoSentMessage,
+  EvoChatParticipant,
   EvoTemplateGroup,
   EvoTiktokChannel,
   EvoBotFlow,
@@ -222,11 +223,7 @@ export async function sendAudio(
 }
 
 // LYD-101: autoria de un mensaje enviado desde el inbox (auditoria comercial).
-export async function recordMessageAuthor(
-  instanceName: string,
-  messageKeyId: string,
-  agentId: string,
-): Promise<void> {
+export async function recordMessageAuthor(instanceName: string, messageKeyId: string, agentId: string): Promise<void> {
   await evoFetch(`/crm/message-authors`, {
     method: "POST",
     body: JSON.stringify({ instanceName, messageKeyId, agentId }),
@@ -254,6 +251,11 @@ export async function getMediaBase64(
 // LYD-105: quien envio un mensaje (autoria de LYD-101) y su estado de entrega.
 export async function getMessageDetails(messageId: string): Promise<EvoMessageDetails> {
   return evoFetch<EvoMessageDetails>(`/crm/messages/${encodeURIComponent(messageId)}/details`);
+}
+
+// LYD-117
+export async function getChatParticipants(chatId: string): Promise<EvoChatParticipant[]> {
+  return evoFetch<EvoChatParticipant[]>(`/crm/conversations/${encodeURIComponent(chatId)}/participants`);
 }
 
 export async function listAgents(): Promise<EvoAgent[]> {
