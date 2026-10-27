@@ -33,6 +33,7 @@ export interface Lead {
   createdAt: string; // ISO, fecha en que entró a su etapa actual
   hasPendingTasks: boolean;
   chatId?: string; // LYD-20: link opcional a la conversacion de WhatsApp (Chat)
+  participants?: { agentId: string; name: string; percent: number }[]; // LYD-117: % de la auditoria diaria
 }
 
 export type MessageDirection = "inbound" | "outbound" | "system";

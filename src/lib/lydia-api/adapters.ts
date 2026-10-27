@@ -230,6 +230,8 @@ export function adaptLead(lead: EvoLead): Lead {
     assignedAgentId: lead.assignedAgentId,
     createdAt: lead.createdAt,
     hasPendingTasks: lead.hasPendingTasks,
+    participants:
+      lead.participants?.map((p) => ({ agentId: p.agent.id, name: p.agent.name, percent: p.percent })) ?? [],
   };
 }
 

@@ -9,7 +9,7 @@ import type {
   InboxMessage,
   InboxMessageSearchHit,
 } from "@/lib/lydia-api/inbox-types";
-import type { EvoMessageDetails } from "@/lib/lydia-api/types";
+import type { EvoChatParticipant, EvoMessageDetails } from "@/lib/lydia-api/types";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { fetchJson } from "./fetch-json";
 
@@ -36,6 +36,18 @@ export function useMessageDetails(messageId: string | null) {
     queryFn: () => fetchJson<EvoMessageDetails>(`/api/lydia/messages/${messageId}/details`),
     enabled: LYDIA_API_ENABLED && messageId !== null,
     retry: false,
+  });
+}
+
+// LYD-117: porcentaje de participacion de la ultima auditoria diaria. Cambia
+// una vez al dia (21:00), asi que sin polling.
+export function useChatParticipants(conversationId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["chat-participants", conversationId],
+    queryFn: () => fetchJson<EvoChatParticipant[]>(`/api/lydia/conversations/${conversationId}/participants`),
+    enabled: LYDIA_API_ENABLED && enabled,
+    retry: false,
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -339,8 +351,7 @@ export function usePendingSends(conversationId: string | null): PendingSend[] {
   return sends
     .filter(
       (send): send is typeof send & { status: "pending" | "error" } =>
-        (send.status === "pending" || send.status === "error") &&
-        send.variables?.conversationId === conversationId,
+        (send.status === "pending" || send.status === "error") && send.variables?.conversationId === conversationId,
     )
     .map((send) => ({
       id: send.id,
@@ -454,4 +465,3 @@ export function useFetchMediaDataUrl() {
     return data.dataUrl;
   };
 }
-

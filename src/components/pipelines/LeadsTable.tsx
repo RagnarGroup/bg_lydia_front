@@ -86,6 +86,11 @@ export function LeadsTable() {
               const agentName = isMockMode
                 ? getAgentById(lead.assignedAgentId)?.name
                 : realAgents.find((a) => a.id === lead.assignedAgentId)?.name;
+              // LYD-117: % de participacion de la auditoria diaria; el del
+              // responsable va a su lado y el resto debajo.
+              const participants = lead.participants ?? [];
+              const ownPercent = participants.find((p) => p.agentId === lead.assignedAgentId)?.percent;
+              const others = participants.filter((p) => p.agentId !== lead.assignedAgentId);
               return (
                 <tr key={lead.id} className="hover:bg-surface">
                   <td className="border-b border-line-soft py-2.5 pr-4">
@@ -104,9 +109,18 @@ export function LeadsTable() {
                       <span className="flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-muted-2" />
                         {agentName}
+                        {ownPercent !== undefined && <span className="font-medium text-ink">{ownPercent}%</span>}
                       </span>
                     ) : (
                       <span className="text-muted">Sin asignar</span>
+                    )}
+                    {others.length > 0 && (
+                      <p
+                        className="mt-0.5 text-xs text-muted"
+                        title="Participación según la auditoría diaria de las 21:00"
+                      >
+                        También: {others.map((p) => `${p.name} ${p.percent}%`).join(", ")}
+                      </p>
                     )}
                   </td>
                   <td className="border-b border-line-soft py-2.5 pr-4 text-ink-soft">
