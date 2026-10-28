@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { InboxMessageMedia } from "@/lib/lydia-api/inbox-types";
 import { useResolveMedia } from "@/lib/queries/conversations";
 import { Icon } from "@/components/icons";
+import { VoiceNotePlayer } from "./VoiceNotePlayer";
 
 interface Props {
   messageId: string;
@@ -28,12 +29,13 @@ const MEDIA_LABEL: Partial<Record<InboxMessageMedia["kind"], string>> = {
 export function MessageMedia({ messageId, media, instanceName }: Props) {
   const [manualLoad, setManualLoad] = useState(false);
   const enabled = AUTO_LOAD_KINDS.includes(media.kind) || manualLoad;
-  const { data: dataUrl, isLoading, isFetching, error, refetch } = useResolveMedia(
-    messageId,
-    media.raw,
-    instanceName,
-    enabled,
-  );
+  const {
+    data: dataUrl,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useResolveMedia(messageId, media.raw, instanceName, enabled);
 
   // LYD-110: con "Reintentar" -- muchas veces es un fallo pasajero al bajar la
   // media de Meta, y antes la unica salida era recargar toda la pagina.
@@ -81,6 +83,7 @@ export function MessageMedia({ messageId, media, instanceName }: Props) {
   }
 
   if (isLoading || !dataUrl) {
+    if (media.kind === "audio") return <div className="h-12 w-72 max-w-full animate-pulse rounded-lg bg-current/10" />;
     return (
       <div
         className={`animate-pulse rounded-lg bg-bg-subtle ${media.kind === "sticker" ? "h-36 w-36" : "h-40 w-56"}`}
@@ -104,5 +107,5 @@ export function MessageMedia({ messageId, media, instanceName }: Props) {
     return <video src={dataUrl} controls className="max-w-xs rounded-lg" />;
   }
 
-  return <audio src={dataUrl} controls className="max-w-xs" />;
+  return <VoiceNotePlayer src={dataUrl} seed={messageId} />;
 }
