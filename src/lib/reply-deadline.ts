@@ -33,11 +33,10 @@ export function formatWaiting(minutes: number): string {
   return rest === 0 ? `${hours} h` : `${hours} h ${rest.toString().padStart(2, "0")} min`;
 }
 
-// Los avisos (toast + sonido) son para las asesoras que escribieron en el
-// chat, o para todas si ninguna escribio todavia (LYD-123: ya no hay
-// responsable). La lista se colorea igual para todos.
-export function isMyAlert(participantIds: string[], myAgentId: string | null | undefined): boolean {
-  return participantIds.length === 0 || (!!myAgentId && participantIds.includes(myAgentId));
+// Los avisos (toast + sonido) son para la asesora responsable del chat, o para
+// todas si nadie lo tomo todavia. La lista se colorea igual para todos.
+export function isMyAlert(assigneeId: string | undefined, myAgentId: string | null | undefined): boolean {
+  return !assigneeId || (!!myAgentId && assigneeId === myAgentId);
 }
 
 // Clave de un aviso ya mostrado: el mismo chat vuelve a avisar si sube de

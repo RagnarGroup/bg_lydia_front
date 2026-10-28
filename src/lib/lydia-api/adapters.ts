@@ -298,7 +298,7 @@ export function adaptConversation(conversation: EvoConversation): InboxConversat
     // LYD-31: de que instancia es, para pedir mensajes/mandar por el canal correcto.
     instanceName: conversation.instanceName,
     contact: adaptContact(conversation),
-    participantIds: conversation.participantIds ?? [],
+    assignee: conversation.Agent ? adaptAgent(conversation.Agent) : undefined,
     status: deriveStatus(conversation),
     lastMessagePreview: conversation.lastMessage?.content ?? "",
     lastMessageAt: conversation.lastMessage

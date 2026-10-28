@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getConversation, sendAudio } from "@/lib/lydia-api/client";
-import { recordMessageSender } from "@/lib/lydia-api/message-sender";
+import { autoAssignToSender } from "@/lib/lydia-api/auto-assign";
 import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 // LYD-53: nota de voz grabada en el navegador (base64 inline, mismo patron
@@ -18,7 +18,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const conversation = await getConversation(id);
     const sent = await sendAudio(conversation.remoteJid, conversation.instanceName, audio, body.quoted ?? undefined);
-    await recordMessageSender(conversation.instanceName, sent);
+    await autoAssignToSender(id, conversation.instanceName, sent);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return apiErrorResponse(error, "POST /api/lydia/conversations/[id]/audio");

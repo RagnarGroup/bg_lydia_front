@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getConversation, sendMedia } from "@/lib/lydia-api/client";
-import { recordMessageSender } from "@/lib/lydia-api/message-sender";
+import { autoAssignToSender } from "@/lib/lydia-api/auto-assign";
 import { apiErrorResponse } from "@/lib/lydia-api/api-error";
 
 const MEDIA_TYPES = ["image", "document", "video", "audio"] as const;
@@ -30,7 +30,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       },
       body.quoted ?? undefined,
     );
-    await recordMessageSender(conversation.instanceName, sent);
+    await autoAssignToSender(id, conversation.instanceName, sent);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return apiErrorResponse(error, "POST /api/lydia/conversations/[id]/media");
