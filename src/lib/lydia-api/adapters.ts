@@ -227,6 +227,7 @@ export function adaptLead(lead: EvoLead): Lead {
     budget: lead.budget ?? undefined,
     budgetAmount: Number(lead.budgetAmount),
     stage: lead.stage,
+    leadType: lead.leadType,
     assignedAgentId: lead.assignedAgentId,
     createdAt: lead.createdAt,
     hasPendingTasks: lead.hasPendingTasks,

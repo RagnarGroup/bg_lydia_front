@@ -220,6 +220,9 @@ export interface EvoMessagesResponse {
 export type LeadStage =
   "contacto_inicial" | "negociacion" | "promesa_pago" | "discusion_contrato" | "matriculado" | "venta_perdida";
 
+// LYD-115
+export type LeadType = "matricula" | "empleo" | "alumno_actual" | "otro";
+
 export interface EvoLead {
   id: string;
   leadNumber: string;
@@ -232,6 +235,7 @@ export interface EvoLead {
   budget: string | null;
   budgetAmount: string; // Prisma Decimal serializa como string en JSON
   stage: LeadStage;
+  leadType: LeadType;
   hasPendingTasks: boolean;
   chatId: string | null;
   assignedAgentId: string | null;

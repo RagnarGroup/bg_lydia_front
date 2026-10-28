@@ -4,7 +4,8 @@ import { useState } from "react";
 import { pipelineStages } from "@/lib/mock-data";
 import type { InboxConversation } from "@/lib/lydia-api/inbox-types";
 import { CHANNEL_META } from "@/lib/lydia-api/channel";
-import type { PipelineStageId } from "@/lib/types";
+import type { LeadType, PipelineStageId } from "@/lib/types";
+import { LEAD_TYPES } from "@/lib/lead-types";
 import { Icon } from "@/components/icons";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { ContactAvatar } from "@/components/ContactAvatar";
@@ -67,6 +68,7 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
   const updateLead = useUpdateLead();
 
   const [draftStage, setDraftStage] = useState<PipelineStageId>("contacto_inicial");
+  const [draftType, setDraftType] = useState<LeadType>("matricula");
   const [draftBudget, setDraftBudget] = useState("");
   const [syncedFromLead, setSyncedFromLead] = useState(false);
 
@@ -74,6 +76,7 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
     setSyncedFromLead(true);
     if (lead) {
       setDraftStage(lead.stage);
+      setDraftType(lead.leadType);
       setDraftBudget(lead.budgetAmount ? String(lead.budgetAmount) : "");
     }
   }
@@ -81,7 +84,7 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
   const stageIndex = pipelineStages.findIndex((s) => s.id === draftStage);
   const isSavingLead = createLead.isPending || updateLead.isPending;
 
-  const persistLead = (patch: { stage?: PipelineStageId; budgetAmount?: number }) => {
+  const persistLead = (patch: { stage?: PipelineStageId; leadType?: LeadType; budgetAmount?: number }) => {
     if (!canUseBackend) return;
     if (lead) {
       updateLead.mutate({ id: lead.id, data: patch });
@@ -91,6 +94,7 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
         source: CHANNEL_META[conversation.inboxChannel].label,
         chatId: conversation.id,
         stage: patch.stage,
+        leadType: patch.leadType,
         budgetAmount: patch.budgetAmount,
       });
     }
@@ -99,6 +103,11 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
   const handleStageChange = (newStage: PipelineStageId) => {
     setDraftStage(newStage);
     persistLead({ stage: newStage });
+  };
+
+  const handleTypeChange = (newType: LeadType) => {
+    setDraftType(newType);
+    persistLead({ leadType: newType });
   };
 
   const handleBudgetBlur = () => {
@@ -165,44 +174,73 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
             </div>
           )}
 
+          {/* LYD-115: un postulante laboral (u otro no comercial) no lleva etapa
+              ni presupuesto y sale del pipeline de ventas. */}
           <div className="mt-4">
-            <label className="mb-1 block text-xs font-medium text-muted">Estado lead</label>
+            <label className="mb-1 block text-xs font-medium text-muted">Tipo de lead</label>
             <select
-              value={draftStage}
+              value={draftType}
               disabled={!canUseBackend || isSavingLead}
-              onChange={(e) => handleStageChange(e.target.value as PipelineStageId)}
+              onChange={(e) => handleTypeChange(e.target.value as LeadType)}
               className="w-full rounded-md border border-line px-2.5 py-2 text-sm text-ink-soft focus:border-brand focus:outline-none"
             >
-              {pipelineStages.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
+              {LEAD_TYPES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
                 </option>
               ))}
             </select>
+            {draftType !== "matricula" && (
+              <p className="mt-1 text-[11px] text-muted">
+                No cuenta en el pipeline de ventas ni en las métricas comerciales.
+              </p>
+            )}
+          </div>
 
-            <div className="mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-bg-subtle">
-              {pipelineStages.map((s, i) => (
-                <div
-                  key={s.id}
-                  className={`h-full flex-1 ${i <= stageIndex ? s.color : "bg-bg-subtle"} ${i > 0 ? "ml-0.5" : ""}`}
+          {draftType === "matricula" && (
+            <>
+              <div className="mt-4 border-t border-line-soft pt-3">
+                <label className="mb-1 block text-xs font-medium text-muted">Estado lead</label>
+                <select
+                  value={draftStage}
+                  disabled={!canUseBackend || isSavingLead}
+                  onChange={(e) => handleStageChange(e.target.value as PipelineStageId)}
+                  className="w-full rounded-md border border-line px-2.5 py-2 text-sm text-ink-soft focus:border-brand focus:outline-none"
+                >
+                  {pipelineStages.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-bg-subtle">
+                  {pipelineStages.map((s, i) => (
+                    <div
+                      key={s.id}
+                      className={`h-full flex-1 ${i <= stageIndex ? s.color : "bg-bg-subtle"} ${i > 0 ? "ml-0.5" : ""}`}
+                    />
+                  ))}
+                </div>
+                {!canUseBackend && (
+                  <p className="mt-1 text-[11px] text-muted">Solo se guarda con el backend conectado.</p>
+                )}
+              </div>
+
+              <div className="mt-4 border-t border-line-soft pt-3">
+                <label className="mb-1 block text-xs font-medium text-muted">Presupuesto</label>
+                <input
+                  type="text"
+                  value={draftBudget}
+                  disabled={!canUseBackend || isSavingLead}
+                  onChange={(e) => setDraftBudget(e.target.value)}
+                  onBlur={handleBudgetBlur}
+                  placeholder="S/"
+                  className="w-full rounded-md border border-line px-2.5 py-2 text-sm text-ink-soft focus:border-brand focus:outline-none"
                 />
-              ))}
-            </div>
-            {!canUseBackend && <p className="mt-1 text-[11px] text-muted">Solo se guarda con el backend conectado.</p>}
-          </div>
-
-          <div className="mt-4 border-t border-line-soft pt-3">
-            <label className="mb-1 block text-xs font-medium text-muted">Presupuesto</label>
-            <input
-              type="text"
-              value={draftBudget}
-              disabled={!canUseBackend || isSavingLead}
-              onChange={(e) => setDraftBudget(e.target.value)}
-              onBlur={handleBudgetBlur}
-              placeholder="S/"
-              className="w-full rounded-md border border-line px-2.5 py-2 text-sm text-ink-soft focus:border-brand focus:outline-none"
-            />
-          </div>
+              </div>
+            </>
+          )}
 
           <div className="mt-4 flex items-center gap-2 border-t border-line-soft pt-4">
             <ContactAvatar seed={contact.lydiaContactId} avatarUrl={contact.avatarUrl} className="h-9 w-9" />
