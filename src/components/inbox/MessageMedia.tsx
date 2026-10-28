@@ -84,7 +84,7 @@ export function MessageMedia({ messageId, media, instanceName, avatar }: Props) 
   }
 
   if (isLoading || !dataUrl) {
-    if (media.kind === "audio") return <div className="h-12 w-72 max-w-full animate-pulse rounded-lg bg-current/10" />;
+    if (media.kind === "audio") return <div className="h-14 w-72 max-w-full animate-pulse rounded-lg bg-current/10" />;
     return (
       <div
         className={`animate-pulse rounded-lg bg-bg-subtle ${media.kind === "sticker" ? "h-36 w-36" : "h-40 w-56"}`}
