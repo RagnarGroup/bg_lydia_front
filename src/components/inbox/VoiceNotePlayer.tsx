@@ -21,6 +21,8 @@ export interface VoiceNoteAvatar {
   url?: string | null;
   // Fondo del circulo del microfono: el mismo color de la burbuja.
   badgeClass?: string;
+  // Mensajes del cliente: la foto va a la izquierda, como en WhatsApp.
+  side?: "left" | "right";
 }
 
 export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: string; avatar?: VoiceNoteAvatar }) {
@@ -98,6 +100,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
 
   const progress = duration ? Math.min(1, current / duration) : 0;
   const started = playing || current > 0;
+  const avatarLeft = avatar?.side === "left";
 
   return (
     <div className="flex w-72 max-w-full items-center gap-2 px-1 py-0.5">
@@ -173,7 +176,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         </div>
       </div>
 
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+      <div className={`flex h-14 w-14 shrink-0 items-center justify-center ${avatarLeft ? "order-first" : ""}`}>
         {started ? (
           <button
             type="button"
@@ -187,7 +190,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
           <span className="relative">
             <ContactAvatar seed={avatar?.seed ?? seed} avatarUrl={avatar?.url} className="h-14 w-14" />
             <span
-              className={`absolute -bottom-1 -left-1.5 flex h-5 w-5 items-center justify-center rounded-full ${
+              className={`absolute -bottom-1 ${avatarLeft ? "-right-1.5" : "-left-1.5"} flex h-5 w-5 items-center justify-center rounded-full ${
                 avatar?.badgeClass ?? ""
               }`}
             >
@@ -199,7 +202,11 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         )}
       </div>
 
-      <span className="pointer-events-none absolute bottom-3.5 left-[3.375rem] text-[11px] leading-none tabular-nums opacity-75">
+      <span
+        className={`pointer-events-none absolute bottom-3.5 text-[11px] leading-none tabular-nums opacity-75 ${
+          avatarLeft ? "left-[7.375rem]" : "left-[3.375rem]"
+        }`}
+      >
         {formatAudioTime(started ? current : duration)}
       </span>
     </div>
