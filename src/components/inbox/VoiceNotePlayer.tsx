@@ -8,8 +8,9 @@ import { formatAudioTime, peaksFromSamples, placeholderPeaks, WAVEFORM_BARS } fr
 // de onda clickeable, tiempo y velocidad) en vez del <audio controls> nativo.
 // Toma el color del texto de la burbuja (currentColor), asi sirve igual en
 // mensajes entrantes y salientes. La duracion va en la fila de la hora del
-// mensaje (posicion absoluta respecto de la burbuja) y a la derecha va la foto
-// del contacto, que se cambia por la velocidad mientras el audio esta en curso.
+// mensaje, ambas debajo de la forma de onda (posicion absoluta respecto de la
+// burbuja, ver MessageBubble). A la derecha va la foto del contacto a todo el
+// alto, que se cambia por la velocidad mientras el audio esta en curso.
 
 const SPEEDS = [1, 1.5, 2] as const;
 
@@ -99,7 +100,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
   const started = playing || current > 0;
 
   return (
-    <div className="flex w-72 max-w-full items-center gap-2 px-1 pt-1">
+    <div className="flex w-72 max-w-full items-center gap-2 px-1 py-0.5">
       <audio
         ref={audioRef}
         src={src}
@@ -116,56 +117,60 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         }}
       />
 
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={playing ? "Pausar" : "Reproducir"}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-current/10"
-      >
-        {playing ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-            <rect x="6" y="4.5" width="4" height="15" rx="1.2" />
-            <rect x="14" y="4.5" width="4" height="15" rx="1.2" />
-          </svg>
-        ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-            <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.6-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z" />
-          </svg>
-        )}
-      </button>
+      <div className="flex shrink-0 flex-col pb-4">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={playing ? "Pausar" : "Reproducir"}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-current/10"
+        >
+          {playing ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <rect x="6" y="4.5" width="4" height="15" rx="1.2" />
+              <rect x="14" y="4.5" width="4" height="15" rx="1.2" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.6-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z" />
+            </svg>
+          )}
+        </button>
+      </div>
 
-      <div
-        role="slider"
-        tabIndex={0}
-        aria-label="Posición del audio"
-        aria-valuemin={0}
-        aria-valuemax={Math.round(duration)}
-        aria-valuenow={Math.round(current)}
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          seekTo((e.clientX - rect.left) / rect.width);
-        }}
-        onKeyDown={(e) => {
-          if (!duration) return;
-          if (e.key === "ArrowRight") seekTo((current + 5) / duration);
-          if (e.key === "ArrowLeft") seekTo((current - 5) / duration);
-        }}
-        className="relative flex h-8 min-w-0 flex-1 cursor-pointer items-center gap-[2px] focus:outline-none"
-      >
-        {peaks.map((peak, i) => (
+      <div className="flex min-w-0 flex-1 flex-col pb-4">
+        <div
+          role="slider"
+          tabIndex={0}
+          aria-label="Posición del audio"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(duration)}
+          aria-valuenow={Math.round(current)}
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            seekTo((e.clientX - rect.left) / rect.width);
+          }}
+          onKeyDown={(e) => {
+            if (!duration) return;
+            if (e.key === "ArrowRight") seekTo((current + 5) / duration);
+            if (e.key === "ArrowLeft") seekTo((current - 5) / duration);
+          }}
+          className="relative flex h-8 cursor-pointer items-center gap-[2px] focus:outline-none"
+        >
+          {peaks.map((peak, i) => (
+            <span
+              key={i}
+              className={`w-[3px] flex-1 rounded-full transition-colors ${
+                (i + 0.5) / peaks.length <= progress ? "bg-current" : "bg-current/35"
+              }`}
+              style={{ height: `${Math.round(peak * 100)}%` }}
+            />
+          ))}
           <span
-            key={i}
-            className={`w-[3px] flex-1 rounded-full transition-colors ${
-              (i + 0.5) / peaks.length <= progress ? "bg-current" : "bg-current/35"
-            }`}
-            style={{ height: `${Math.round(peak * 100)}%` }}
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current shadow-sm"
+            style={{ left: `${progress * 100}%` }}
           />
-        ))}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current shadow-sm"
-          style={{ left: `${progress * 100}%` }}
-        />
+        </div>
       </div>
 
       <div className="flex h-14 w-14 shrink-0 items-center justify-center">
@@ -194,7 +199,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         )}
       </div>
 
-      <span className="pointer-events-none absolute bottom-2 left-[3.4rem] text-[11px] leading-none tabular-nums opacity-75">
+      <span className="pointer-events-none absolute bottom-3.5 left-[3.375rem] text-[11px] leading-none tabular-nums opacity-75">
         {formatAudioTime(started ? current : duration)}
       </span>
     </div>

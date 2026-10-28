@@ -169,11 +169,15 @@ export function MessageBubble({
   // pie de foto): al final de la ultima linea, con un espaciador invisible
   // que le reserva el lugar para que el texto no quede debajo de la hora.
   const isSticker = media?.kind === "sticker";
-  const metaPlacement: "inline" | "overlay" | "row" =
+  // LYD-132: nota de voz sin texto: debajo del final de la forma de onda, al
+  // nivel de la duracion (la foto ocupa todo el alto a la derecha).
+  const metaPlacement: "inline" | "overlay" | "row" | "audio" =
     media && !media.caption
       ? media.kind === "image" || media.kind === "video" || media.kind === "sticker"
         ? "overlay"
-        : "row"
+        : media.kind === "audio"
+          ? "audio"
+          : "row"
       : "inline";
   const metaSpacer = <span aria-hidden className={`inline-block ${isOutbound ? "w-[4.25rem]" : "w-11"}`} />;
   // Los stickers van sin burbuja, igual que en WhatsApp. Esquinas casi
@@ -238,6 +242,14 @@ export function MessageBubble({
                 delivery={message.delivery}
                 variant="overlay"
                 className={`absolute ${isSticker ? "bottom-1 right-1" : "bottom-3 right-3"}`}
+              />
+            ) : metaPlacement === "audio" ? (
+              <MessageMeta
+                sentAt={message.sentAt}
+                isOutbound={isOutbound}
+                delivery={message.delivery}
+                variant="inline"
+                className="absolute bottom-3.5 right-[4.625rem]"
               />
             ) : metaPlacement === "row" ? (
               <div className="flex justify-end px-1.5 pb-0.5 pt-1">
