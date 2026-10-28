@@ -9,7 +9,6 @@ import { LEAD_TYPES } from "@/lib/lead-types";
 import { Icon } from "@/components/icons";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { ContactAvatar } from "@/components/ContactAvatar";
-import { useAgents, useAssignAgent } from "@/lib/queries/conversations";
 import { useCreateLead, useLeads, useUpdateLead } from "@/lib/queries/leads";
 import { NotesSection } from "./NotesSection";
 import { AgentAssistantPanel } from "./AgentAssistantPanel";
@@ -48,12 +47,9 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 }
 
 export function LeadDetailPanel({ conversation, view, onViewChange, agentRequestId, onUseSuggestion }: Props) {
-  const { contact, assignee } = conversation;
+  const { contact } = conversation;
 
-  const { data: agents = [] } = useAgents();
-  const assignAgent = useAssignAgent(conversation.id);
   const canUseBackend = LYDIA_API_ENABLED && conversation.remoteJid !== undefined;
-  const canReassign = canUseBackend;
 
   // LYD-20: "Estado lead" y "Presupuesto" antes eran controles decorativos
   // (estado local que se perdia al cambiar de chat, ni siquiera intentaban
@@ -69,7 +65,6 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
 
   const [draftStage, setDraftStage] = useState<PipelineStageId>("contacto_inicial");
   const [draftType, setDraftType] = useState<LeadType>("matricula");
-  const [draftBudget, setDraftBudget] = useState("");
   const [syncedFromLead, setSyncedFromLead] = useState(false);
 
   if (canUseBackend && !leadLoading && !syncedFromLead) {
@@ -77,14 +72,13 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
     if (lead) {
       setDraftStage(lead.stage);
       setDraftType(lead.leadType);
-      setDraftBudget(lead.budgetAmount ? String(lead.budgetAmount) : "");
     }
   }
 
   const stageIndex = pipelineStages.findIndex((s) => s.id === draftStage);
   const isSavingLead = createLead.isPending || updateLead.isPending;
 
-  const persistLead = (patch: { stage?: PipelineStageId; leadType?: LeadType; budgetAmount?: number }) => {
+  const persistLead = (patch: { stage?: PipelineStageId; leadType?: LeadType }) => {
     if (!canUseBackend) return;
     if (lead) {
       updateLead.mutate({ id: lead.id, data: patch });
@@ -95,7 +89,6 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
         chatId: conversation.id,
         stage: patch.stage,
         leadType: patch.leadType,
-        budgetAmount: patch.budgetAmount,
       });
     }
   };
@@ -108,13 +101,6 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
   const handleTypeChange = (newType: LeadType) => {
     setDraftType(newType);
     persistLead({ leadType: newType });
-  };
-
-  const handleBudgetBlur = () => {
-    if (!canUseBackend) return;
-    const amount = Number(draftBudget.replace(/[^0-9.]/g, "")) || 0;
-    if (lead && amount === lead.budgetAmount) return;
-    persistLead({ budgetAmount: amount });
   };
 
   return (
@@ -225,19 +211,6 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
                   <p className="mt-1 text-[11px] text-muted">Solo se guarda con el backend conectado.</p>
                 )}
               </div>
-
-              <div className="mt-4 border-t border-line-soft pt-3">
-                <label className="mb-1 block text-xs font-medium text-muted">Presupuesto</label>
-                <input
-                  type="text"
-                  value={draftBudget}
-                  disabled={!canUseBackend || isSavingLead}
-                  onChange={(e) => setDraftBudget(e.target.value)}
-                  onBlur={handleBudgetBlur}
-                  placeholder="S/"
-                  className="w-full rounded-md border border-line px-2.5 py-2 text-sm text-ink-soft focus:border-brand focus:outline-none"
-                />
-              </div>
             </>
           )}
 
@@ -257,39 +230,8 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
             <Field label="Correo" value={contact.email} />
           </div>
 
-          <div className="mt-4 border-t border-line-soft pt-4">
-            <label className="mb-1 block text-xs font-medium text-muted">Usuario responsable</label>
-            {canReassign ? (
-              <select
-                value={assignee?.id ?? ""}
-                disabled={assignAgent.isPending}
-                onChange={(e) => assignAgent.mutate(e.target.value || null)}
-                className="w-full rounded-md border border-line px-2.5 py-2 text-sm text-ink-soft focus:border-brand focus:outline-none"
-              >
-                <option value="">Sin asignar</option>
-                {agents.map((agent) => (
-                  <option key={agent.id} value={agent.id}>
-                    {agent.name}
-                    {agent.role === "administrador" ? " (admin)" : ""}
-                  </option>
-                ))}
-              </select>
-            ) : assignee ? (
-              <p className="flex items-center gap-1.5 text-sm text-ink-soft">
-                <span className="h-2 w-2 rounded-full bg-brand" />
-                {assignee.name}
-              </p>
-            ) : (
-              <p className="text-sm text-muted">Sin asignar</p>
-            )}
-            {!canReassign && (
-              <p className="mt-1 text-[11px] text-muted">
-                Reasignar desde acá: solo disponible con el backend conectado.
-              </p>
-            )}
-          </div>
-
-          <ChatParticipants conversationId={conversation.id} assigneeId={assignee?.id} canUseBackend={canUseBackend} />
+          {/* LYD-123: sin "Usuario responsable"; el crédito es la participación. */}
+          <ChatParticipants conversationId={conversation.id} canUseBackend={canUseBackend} />
 
           <NotesSection conversationId={conversation.id} canUseNotes={canUseBackend} />
         </div>

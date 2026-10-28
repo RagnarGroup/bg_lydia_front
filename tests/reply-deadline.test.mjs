@@ -46,14 +46,15 @@ describe("minutesWaiting / formatWaiting", () => {
 });
 
 describe("isMyAlert", () => {
-  it("sin asignar avisa a todas", () => {
-    assert.equal(isMyAlert(undefined, "a1"), true);
+  it("si nadie escribio avisa a todas", () => {
+    assert.equal(isMyAlert([], "a1"), true);
   });
 
-  it("asignado: solo a la responsable", () => {
-    assert.equal(isMyAlert("a1", "a1"), true);
-    assert.equal(isMyAlert("a1", "a2"), false);
-    assert.equal(isMyAlert("a1", null), false);
+  it("solo a las asesoras que escribieron en el chat", () => {
+    assert.equal(isMyAlert(["a1"], "a1"), true);
+    assert.equal(isMyAlert(["a1", "a2"], "a2"), true);
+    assert.equal(isMyAlert(["a1"], "a2"), false);
+    assert.equal(isMyAlert(["a1"], null), false);
   });
 });
 

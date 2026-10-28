@@ -8,10 +8,9 @@ import {
   getLeadsByStage,
   leads as mockLeads,
   pipelineStages,
-  sumBudget,
 } from "@/lib/mock-data";
 import type { Lead } from "@/lib/types";
-import { formatCurrency, formatRelativeTime } from "@/lib/format";
+import { formatRelativeTime } from "@/lib/format";
 import { Icon, type IconName } from "@/components/icons";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { ContactAvatar } from "@/components/ContactAvatar";
@@ -123,11 +122,9 @@ export default function InicioPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent/10 text-accent-dark">
             <Icon name="rayo" size={18} />
           </div>
-          <p className="mt-3 text-sm text-ink-soft">Presupuesto en pipeline activo</p>
-          <p className="text-3xl font-bold text-ink">{formatCurrency(sumBudget(pipelineActivo))}</p>
-          <p className="mt-1 text-xs text-muted">
-            Suma de {pipelineActivo.length} leads que todavía no llegaron a Matriculado ni Venta Perdida
-          </p>
+          <p className="mt-3 text-sm text-ink-soft">Leads en pipeline activo</p>
+          <p className="text-3xl font-bold text-ink">{pipelineActivo.length}</p>
+          <p className="mt-1 text-xs text-muted">Todavía no llegaron a Matriculado ni Venta Perdida</p>
         </div>
 
         <div className="rounded-lg border border-line bg-surface px-card-x py-card-y lg:col-span-3">

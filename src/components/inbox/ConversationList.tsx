@@ -92,7 +92,7 @@ export function ConversationList({
     () => [
       { id: "todas", label: "Todas las asesoras" },
       { id: "mios", label: "Mis chats" },
-      { id: "sin_asignar", label: "Sin asignar" },
+      { id: "sin_asignar", label: "Sin asesora" },
       ...agents.filter((a) => a.id !== currentAgent?.id).map((a) => ({ id: a.id, label: a.name })),
     ],
     [agents, currentAgent?.id],
@@ -100,11 +100,12 @@ export function ConversationList({
 
   const matchesOwner = useCallback(
     (conversation: InboxConversation) => {
-      const assigneeId = conversation.assignee?.id ?? null;
+      // LYD-123: por asesoras que escribieron en el chat, no por responsable.
+      const ids = conversation.participantIds;
       if (activeOwner === "todas") return true;
-      if (activeOwner === "sin_asignar") return assigneeId === null;
-      if (activeOwner === "mios") return assigneeId !== null && assigneeId === currentAgent?.id;
-      return assigneeId === activeOwner;
+      if (activeOwner === "sin_asignar") return ids.length === 0;
+      if (activeOwner === "mios") return ids.includes(currentAgent?.id ?? "");
+      return ids.includes(activeOwner);
     },
     [activeOwner, currentAgent?.id],
   );

@@ -3,9 +3,8 @@
 import { useMemo, useState } from "react";
 import { getAgentById, leads as mockLeads, pipelineStages } from "@/lib/mock-data";
 import type { PipelineStageId } from "@/lib/types";
-import { formatCurrency, formatLeadCardDate } from "@/lib/format";
+import { formatLeadCardDate } from "@/lib/format";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
-import { useAgents } from "@/lib/queries/conversations";
 import { useLeads } from "@/lib/queries/leads";
 import { ALL_LEAD_TYPES, LEAD_TYPES, leadTypeLabel, matchesLeadType, type LeadTypeFilter } from "@/lib/lead-types";
 
@@ -15,7 +14,6 @@ export function LeadsTable() {
   // LYD-115: por defecto solo matricula, igual que el tablero.
   const [typeFilter, setTypeFilter] = useState<LeadTypeFilter>("matricula");
   const { data: realLeads = [], error: leadsError } = useLeads();
-  const { data: realAgents = [] } = useAgents();
   const isMockMode = !LYDIA_API_ENABLED || leadsError !== null;
   const leads = isMockMode ? mockLeads : realLeads;
 
@@ -93,8 +91,7 @@ export function LeadsTable() {
               <th className="border-b border-line pb-2">Lead</th>
               <th className="border-b border-line pb-2">Tipo</th>
               <th className="border-b border-line pb-2">Etapa</th>
-              <th className="border-b border-line pb-2">Responsable</th>
-              <th className="border-b border-line pb-2">Presupuesto</th>
+              <th className="border-b border-line pb-2">Asesoras</th>
               <th className="border-b border-line pb-2">Origen</th>
               <th className="border-b border-line pb-2">Fecha</th>
             </tr>
@@ -102,14 +99,12 @@ export function LeadsTable() {
           <tbody>
             {filtered.map((lead) => {
               const stage = pipelineStages.find((s) => s.id === lead.stage);
-              const agentName = isMockMode
-                ? getAgentById(lead.assignedAgentId)?.name
-                : realAgents.find((a) => a.id === lead.assignedAgentId)?.name;
-              // LYD-117: % de participacion de la auditoria diaria; el del
-              // responsable va a su lado y el resto debajo.
-              const participants = lead.participants ?? [];
-              const ownPercent = participants.find((p) => p.agentId === lead.assignedAgentId)?.percent;
-              const others = participants.filter((p) => p.agentId !== lead.assignedAgentId);
+              // LYD-123: asesoras con su % de la auditoria diaria (en mock, el asignado).
+              const participants = isMockMode
+                ? [getAgentById(lead.assignedAgentId)]
+                    .filter((a) => a !== undefined)
+                    .map((a) => ({ agentId: a.id, name: a.name, percent: 100 }))
+                : (lead.participants ?? []);
               return (
                 <tr key={lead.id} className="hover:bg-surface">
                   <td className="border-b border-line-soft py-2.5 pr-4">
@@ -126,27 +121,21 @@ export function LeadsTable() {
                       {stage?.label}
                     </span>
                   </td>
-                  <td className="border-b border-line-soft py-2.5 pr-4 text-ink-soft">
-                    {agentName ? (
-                      <span className="flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full bg-muted-2" />
-                        {agentName}
-                        {ownPercent !== undefined && <span className="font-medium text-ink">{ownPercent}%</span>}
-                      </span>
+                  <td
+                    className="border-b border-line-soft py-2.5 pr-4 text-ink-soft"
+                    title="Participación según la auditoría diaria de las 21:00"
+                  >
+                    {participants.length ? (
+                      participants.map((p) => (
+                        <span key={p.agentId} className="flex items-center gap-1.5">
+                          <span className="h-2 w-2 rounded-full bg-muted-2" />
+                          {p.name}
+                          <span className="font-medium text-ink">{p.percent}%</span>
+                        </span>
+                      ))
                     ) : (
-                      <span className="text-muted">Sin asignar</span>
+                      <span className="text-muted">Sin calcular</span>
                     )}
-                    {others.length > 0 && (
-                      <p
-                        className="mt-0.5 text-xs text-muted"
-                        title="Participación según la auditoría diaria de las 21:00"
-                      >
-                        También: {others.map((p) => `${p.name} ${p.percent}%`).join(", ")}
-                      </p>
-                    )}
-                  </td>
-                  <td className="border-b border-line-soft py-2.5 pr-4 text-ink-soft">
-                    {formatCurrency(lead.budgetAmount)}
                   </td>
                   <td className="border-b border-line-soft py-2.5 pr-4 text-ink-soft">{lead.source}</td>
                   <td className="border-b border-line-soft py-2.5 pr-4 text-muted">

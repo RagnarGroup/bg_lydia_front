@@ -24,8 +24,8 @@ interface PendingReply {
 /**
  * LYD-118: detecta los chats que cruzan los 5 min (amarillo) y los 10 min
  * (rojo) sin respuesta y dispara el aviso en pantalla + sonido, una vez por
- * chat y nivel. Solo para los chats de la asesora logueada o sin asignar
- * (isMyAlert). Si la pestana no esta a la vista, tambien manda la
+ * chat y nivel. Solo para los chats donde escribio la asesora logueada o
+ * donde no escribio ninguna (isMyAlert). Si la pestana no esta a la vista, tambien manda la
  * notificacion del sistema.
  *
  * Al abrir Lydia no se dispara un aviso por cada chat que ya estaba atrasado:
@@ -46,7 +46,7 @@ export function useReplyDeadlineAlerts(
     const pending: PendingReply[] = [];
     for (const conversation of conversations) {
       if (conversation.status === "cerrado" || !conversation.awaitingReplySince) continue;
-      if (!isMyAlert(conversation.assignee?.id, myAgentId)) continue;
+      if (!isMyAlert(conversation.participantIds, myAgentId)) continue;
       const urgency = replyUrgency(conversation.awaitingReplySince, nowMs);
       const minutes = minutesWaiting(conversation.awaitingReplySince, nowMs);
       if (!urgency || minutes === null) continue;
