@@ -7,6 +7,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { useConversations } from "@/lib/queries/conversations";
 import { useReplyDeadlineAlerts } from "@/lib/hooks/useReplyDeadlineAlerts";
+import { useRepeatingAlertSound } from "@/lib/hooks/useRepeatingAlertSound";
 import type { ReplyUrgency } from "@/lib/reply-deadline";
 import {
   dismissReplyAlert,
@@ -50,6 +51,10 @@ export function ReplyDeadlineToasts() {
   useReplyDeadlineAlerts(conversations, agent?.id ?? null, LYDIA_API_ENABLED);
 
   const alerts = useSyncExternalStore(subscribeReplyAlerts, getReplyAlerts, getServerReplyAlerts);
+  // Sonido en loop mientras haya avisos: el del mas urgente.
+  useRepeatingAlertSound(
+    alerts.some((a) => a.urgency === "overdue") ? "overdue" : alerts.length > 0 ? "warning" : null,
+  );
   const router = useRouter();
 
   if (alerts.length === 0) return null;
