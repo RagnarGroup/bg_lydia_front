@@ -73,6 +73,10 @@ async function triggerDownload(dataUrl: string, fileName: string) {
 // LYD-76: hora + estado de lectura dentro de la burbuja, como en WhatsApp.
 // "inline" va al pie del texto; "overlay" va encima de una foto/video/sticker
 // sin texto, sobre una pastilla oscura para que se lea sobre cualquier imagen.
+// LYD-132: las notas de voz de la asesora llevan el logo de Brittany en vez de
+// la foto del cliente, para no confundir quien habla.
+const ADVISOR_AVATAR_URL = "/avatars/asesor.webp";
+
 const DELIVERY_LABEL: Record<DeliveryStatus, string> = {
   sent: "Enviado",
   delivered: "Entregado",
@@ -246,6 +250,7 @@ export function MessageBubble({
                 avatar={
                   contactAvatar && {
                     ...contactAvatar,
+                    url: isOutbound ? ADVISOR_AVATAR_URL : contactAvatar.url,
                     badgeClass: isOutbound ? "bg-brand" : "bg-surface",
                     side: isOutbound ? "right" : "left",
                   }
