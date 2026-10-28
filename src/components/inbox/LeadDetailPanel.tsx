@@ -153,7 +153,6 @@ export function LeadDetailPanel({ conversation, view, onViewChange, agentRequest
             <ChannelBadge channel={conversation.inboxChannel} size={18} />
             {CHANNEL_META[conversation.inboxChannel].label}
           </p>
-          <p className="text-xs text-muted">Canal por donde llegó la conversación</p>
 
           {/* LYD-96: fuente y campaña/anuncio de origen del lead. */}
           {(sourceOf(conversation) || conversation.attribution) && (
