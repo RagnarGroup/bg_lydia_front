@@ -220,7 +220,13 @@ export function MessageBubble({
                 messageId={message.id}
                 media={message.media}
                 instanceName={instanceName}
-                avatar={contactAvatar && { ...contactAvatar, badgeClass: isOutbound ? "bg-brand" : "bg-surface" }}
+                avatar={
+                  contactAvatar && {
+                    ...contactAvatar,
+                    badgeClass: isOutbound ? "bg-brand" : "bg-surface",
+                    side: isOutbound ? "right" : "left",
+                  }
+                }
               />
             )}
             {message.media?.caption && (
@@ -249,7 +255,7 @@ export function MessageBubble({
                 isOutbound={isOutbound}
                 delivery={message.delivery}
                 variant="inline"
-                className="absolute bottom-3.5 right-[4.625rem]"
+                className={`absolute bottom-3.5 ${isOutbound ? "right-[4.625rem]" : "right-2.5"}`}
               />
             ) : metaPlacement === "row" ? (
               <div className="flex justify-end px-1.5 pb-0.5 pt-1">
