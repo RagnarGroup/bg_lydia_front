@@ -54,6 +54,54 @@ export function playPopSound() {
   }
 }
 
+// LYD-118: tono simple con ataque y caida cortos, base de los sonidos de
+// "lead sin respuesta" -- distintos del pop de mensaje nuevo para que la
+// asesora sepa que es una alerta sin mirar la pantalla.
+function playTones(tones: { start: number; freq: number; duration: number; gain: number; type?: OscillatorType }[]) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    if (ctx.state === "suspended") void ctx.resume();
+    const now = ctx.currentTime;
+    for (const tone of tones) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = tone.type ?? "sine";
+      osc.frequency.setValueAtTime(tone.freq, now + tone.start);
+      gain.gain.setValueAtTime(0.0001, now + tone.start);
+      gain.gain.exponentialRampToValueAtTime(tone.gain, now + tone.start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.start + tone.duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + tone.start);
+      osc.stop(now + tone.start + tone.duration + 0.02);
+    }
+  } catch {
+    // Igual que playPopSound: si el navegador bloquea el audio, la alerta visual sigue.
+  }
+}
+
+// 5 min (amarillo): campanita de dos notas ascendentes.
+export function playReplyWarningSound() {
+  playTones([
+    { start: 0, freq: 880, duration: 0.35, gain: 0.22 },
+    { start: 0.18, freq: 1320, duration: 0.5, gain: 0.18 },
+  ]);
+}
+
+// 10 min (rojo): tres pitidos insistentes, repetidos dos veces.
+export function playReplyOverdueSound() {
+  const beeps = [0, 0.16, 0.32, 0.7, 0.86, 1.02].map((start) => ({
+    start,
+    freq: 988,
+    duration: 0.12,
+    gain: 0.2,
+    type: "square" as OscillatorType,
+  }));
+  playTones(beeps);
+}
+
 export function isNotificationSupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window;
 }
@@ -67,10 +115,12 @@ export function requestNotificationPermissionIfNeeded() {
   }
 }
 
-export function showNewMessageNotification(title: string, body: string) {
+// LYD-118: `tag` agrupa notificaciones del mismo tipo (una nueva reemplaza a
+// la anterior con el mismo tag en vez de apilarse).
+export function showNewMessageNotification(title: string, body: string, tag = "lydia-nuevo-mensaje") {
   if (!isNotificationSupported() || Notification.permission !== "granted") return;
   try {
-    new Notification(title, { body, icon: "/icons/logo_simple.png", tag: "lydia-nuevo-mensaje" });
+    new Notification(title, { body, icon: "/icons/logo_simple.png", tag });
   } catch {
     // Notification puede tirar en navegadores/contextos raros (ej. iframes) --
     // el sonido ya se reprodujo, no vale la pena romper nada por esto.

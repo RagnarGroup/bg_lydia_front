@@ -60,6 +60,8 @@ export interface EvoConversation {
   agentTags?: Record<string, string> | null;
   // LYD-96: origen del lead (anuncio de Meta o codigo [TT-...]) -- ver lib/attribution.ts.
   attribution?: LeadAttribution | null;
+  // LYD-118: hora unix desde la que el cliente espera respuesta humana; null si no espera.
+  awaitingReplySince?: number | null;
 }
 
 // LYD-60: GET /crm/conversations/search?q= -- mensajes cuyo texto/caption

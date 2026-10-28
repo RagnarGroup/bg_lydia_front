@@ -89,6 +89,19 @@ export function InboxView({ initialChatId = null }: { initialChatId?: string | n
   // nombre/telefono se guarda solo en memoria -- no hay Chat real donde
   // persistirlo.
   const [mockContactOverrides, setMockContactOverrides] = useState<Record<string, { name: string; phone: string }>>({});
+  // LYD-118: un aviso de "sin respuesta" lleva a ?chat=<id> aunque el inbox ya
+  // este abierto; ahi la pagina no se vuelve a montar, solo cambia la prop.
+  // Mismo efecto que elegir el chat en la lista.
+  const [lastInitialChatId, setLastInitialChatId] = useState(initialChatId);
+  if (initialChatId !== lastInitialChatId) {
+    setLastInitialChatId(initialChatId);
+    if (initialChatId) {
+      setSelectedConversationId(initialChatId);
+      setAgentRequest(null);
+      setFocusMessageId(null);
+      setMobileView("thread");
+    }
+  }
 
   const { data: realConversations = [], isLoading, error } = useConversations("all");
   const isMockMode = !LYDIA_API_ENABLED || error !== null;

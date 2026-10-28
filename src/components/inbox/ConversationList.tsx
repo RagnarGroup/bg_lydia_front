@@ -7,6 +7,7 @@ import { ConversationListItem } from "./ConversationListItem";
 import { MessageSearchResultItem } from "./MessageSearchResultItem";
 import { useEscapeKey } from "@/lib/hooks/useEscapeKey";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
+import { useNow } from "@/lib/hooks/useNow";
 import { useAgents, useMessageSearch } from "@/lib/queries/conversations";
 import { contactMatches } from "@/lib/highlight";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -51,6 +52,8 @@ export function ConversationList({
   selectedMessageId,
   messageSearchEnabled,
 }: Props) {
+  // LYD-118: reloj para el color de "sin respuesta" (pasa de amarillo a rojo sin esperar al poll).
+  const nowMs = useNow(15_000);
   const [search, setSearch] = useState("");
   // LYD-60: el filtro de contactos es local e instantaneo; la busqueda en
   // mensajes va al back, con debounce para no pegarle en cada tecla.
@@ -373,6 +376,7 @@ export function ConversationList({
             conversation={conversation}
             active={conversation.id === selectedConversationId && selectedMessageId === null}
             onClick={() => onSelect(conversation.id)}
+            nowMs={nowMs}
           />
         ))}
 
