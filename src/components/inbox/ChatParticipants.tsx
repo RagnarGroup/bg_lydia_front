@@ -32,23 +32,25 @@ export function ChatParticipants({ conversationId, assigneeId, canUseBackend }: 
         <p className="text-sm text-muted">Sin calcular todavía: se calcula cada día a las 21:00.</p>
       ) : (
         <>
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {participants.map(({ agent, percent, reason }) => (
-              <li key={agent.id} className="flex items-center gap-1.5 text-sm" title={reason ?? undefined}>
-                <span
-                  className="h-2 w-2 shrink-0 rounded-full bg-brand"
-                  style={agent.color ? { backgroundColor: agent.color } : undefined}
-                />
-                <span className="min-w-0 truncate text-ink-soft">
-                  {agent.name}
-                  {agent.id === assigneeId && <span className="ml-1.5 text-[11px] text-muted">(responsable)</span>}
-                </span>
-                <span className="ml-auto font-medium text-ink">{percent}%</span>
+              <li key={agent.id} className="text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full bg-brand"
+                    style={agent.color ? { backgroundColor: agent.color } : undefined}
+                  />
+                  <span className="min-w-0 truncate text-ink-soft">
+                    {agent.name}
+                    {agent.id === assigneeId && <span className="ml-1.5 text-[11px] text-muted">(responsable)</span>}
+                  </span>
+                  <span className="ml-auto font-medium text-ink">{percent}%</span>
+                </div>
+                {reason && <p className="pl-3.5 text-[11px] text-muted">{reason}</p>}
               </li>
             ))}
           </ul>
-          {participants[0].reason && <p className="mt-1.5 text-[11px] text-muted">{participants[0].reason}</p>}
-          <p className="mt-1 text-[11px] text-muted">
+          <p className="mt-1.5 text-[11px] text-muted">
             Auditoría del {formatReportDate(participants[0].reportDate)}, 21:00.
           </p>
         </>
