@@ -13,7 +13,6 @@ interface Props {
     contactName: string;
     phone: string;
     source: string;
-    budgetAmount: number;
     stage: PipelineStageId;
   }) => void;
 }
@@ -22,7 +21,6 @@ export function NewLeadModal({ initialStage, lockStage, onClose, onCreate }: Pro
   const [contactName, setContactName] = useState("");
   const [phone, setPhone] = useState("");
   const [source, setSource] = useState("");
-  const [budgetAmount, setBudgetAmount] = useState("");
   const [stage, setStage] = useState<PipelineStageId>(initialStage);
 
   useEscapeKey(true, onClose);
@@ -34,7 +32,6 @@ export function NewLeadModal({ initialStage, lockStage, onClose, onCreate }: Pro
       contactName: contactName.trim(),
       phone: phone.trim(),
       source: source.trim() || "Manual",
-      budgetAmount: Number(budgetAmount) || 0,
       stage,
     });
   };
@@ -84,17 +81,6 @@ export function NewLeadModal({ initialStage, lockStage, onClose, onCreate }: Pro
               onChange={(e) => setSource(e.target.value)}
               type="text"
               placeholder="Facebook Ads, referido, ..."
-              className="w-full rounded-md border border-line px-2.5 py-2 text-sm focus:border-brand focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-medium text-ink-soft">Presupuesto (S/)</label>
-            <input
-              value={budgetAmount}
-              onChange={(e) => setBudgetAmount(e.target.value)}
-              type="number"
-              min="0"
               className="w-full rounded-md border border-line px-2.5 py-2 text-sm focus:border-brand focus:outline-none"
             />
           </div>

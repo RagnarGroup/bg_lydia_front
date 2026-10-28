@@ -1,20 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  getAgentById,
-  getLeadsByStage,
-  incomingRequests,
-  leads as mockLeads,
-  pipelineStages,
-  sumBudget,
-} from "@/lib/mock-data";
+import { getLeadsByStage, incomingRequests, leads as mockLeads, pipelineStages } from "@/lib/mock-data";
 import type { Lead, PipelineStageId } from "@/lib/types";
-import { formatCurrency, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { useEscapeKey } from "@/lib/hooks/useEscapeKey";
 import { useCreateLead, useLeads } from "@/lib/queries/leads";
-import { useAgents } from "@/lib/queries/conversations";
 import { campaignPeriodFor, isInPeriod, limaDayKey, listCampaignPeriods } from "@/lib/campaign-period";
 import { buildXlsx, downloadXlsx } from "@/lib/leads-export";
 import { ALL_LEAD_TYPES, LEAD_TYPES, leadTypeLabel, matchesLeadType, type LeadTypeFilter } from "@/lib/lead-types";
@@ -32,7 +24,6 @@ export function PipelineBoard() {
   const { data: realLeads = [], error: leadsError } = useLeads();
   const isMockMode = !LYDIA_API_ENABLED || leadsError !== null;
   const createLead = useCreateLead();
-  const { data: realAgents = [] } = useAgents();
   const { agent } = useAuth();
   // LYD-2: en modo mock seguimos filtrando contra el agente de ejemplo
   // (los datos de mock-data.ts usan ids tipo "mafer"); en modo real es el
@@ -70,14 +61,15 @@ export function PipelineBoard() {
     return leadList.filter((lead) => {
       if (selectedPeriod && !isInPeriod(lead.createdAt, selectedPeriod)) return false;
       if (!matchesLeadType(lead, typeFilter)) return false;
-      if (onlyMine && lead.assignedAgentId !== CURRENT_AGENT_ID) return false;
+      // LYD-123: "mios" son los leads donde participo (en mock, el asignado).
+      if (onlyMine && !participatesIn(lead, CURRENT_AGENT_ID, isMockMode)) return false;
       if (search.trim()) {
         const query = search.trim().toLowerCase();
         return lead.contactName.toLowerCase().includes(query) || lead.leadNumber.toLowerCase().includes(query);
       }
       return true;
     });
-  }, [leadList, onlyMine, search, selectedPeriod, typeFilter, CURRENT_AGENT_ID]);
+  }, [leadList, onlyMine, search, selectedPeriod, typeFilter, CURRENT_AGENT_ID, isMockMode]);
 
   const filteredIncoming = useMemo(() => {
     if (!search.trim()) return incomingRequests;
@@ -85,7 +77,7 @@ export function PipelineBoard() {
     return incomingRequests.filter((r) => r.contactName.toLowerCase().includes(query));
   }, [search]);
 
-  // LYD-91: exporta lo que se ve (periodo + responsable + busqueda), no toda la base.
+  // LYD-91: exporta lo que se ve (periodo + filtro + busqueda), no toda la base.
   const handleExport = () => {
     setMenuOpen(false);
     const columns = [
@@ -97,9 +89,7 @@ export function PipelineBoard() {
       { header: "Origen", width: 22 },
       { header: "Tipo", width: 20 },
       { header: "Etapa", width: 20 },
-      { header: "Responsable", width: 18 },
-      { header: "Participación (%)", width: 30 },
-      { header: "Presupuesto (S/)", width: 16 },
+      { header: "Asesoras (participación %)", width: 36 },
       { header: "Fecha de ingreso", width: 18 },
     ];
     const rows = filteredLeads.map((lead) => [
@@ -111,11 +101,7 @@ export function PipelineBoard() {
       lead.source,
       leadTypeLabel(lead.leadType),
       pipelineStages.find((s) => s.id === lead.stage)?.label ?? lead.stage,
-      (isMockMode
-        ? getAgentById(lead.assignedAgentId)?.name
-        : realAgents.find((a) => a.id === lead.assignedAgentId)?.name) ?? "Sin asignar",
       (lead.participants ?? []).map((p) => `${p.name} ${p.percent}%`).join(", "),
-      lead.budgetAmount,
       new Date(lead.createdAt),
     ]);
     const suffix = selectedPeriod ? `${selectedPeriod.key}_al_${campaignPeriodEndKey(selectedPeriod.end)}` : "todas";
@@ -126,7 +112,6 @@ export function PipelineBoard() {
     contactName: string;
     phone: string;
     source: string;
-    budgetAmount: number;
     stage: PipelineStageId;
   }) => {
     if (!isMockMode) {
@@ -134,7 +119,6 @@ export function PipelineBoard() {
         contactName: data.contactName,
         phone: data.phone,
         source: data.source,
-        budgetAmount: data.budgetAmount,
         stage: data.stage,
         assignedAgentId: CURRENT_AGENT_ID,
       });
@@ -150,7 +134,7 @@ export function PipelineBoard() {
       contactName: data.contactName,
       phone: data.phone,
       source: data.source,
-      budgetAmount: data.budgetAmount,
+      budgetAmount: 0,
       stage: data.stage,
       assignedAgentId: CURRENT_AGENT_ID,
       createdAt: new Date().toISOString(),
@@ -175,7 +159,7 @@ export function PipelineBoard() {
               onlyMine ? "border-brand/30 bg-brand/10 text-brand-dark" : "border-line text-ink-soft hover:bg-bg-subtle"
             }`}
           >
-            {onlyMine ? "Asignado a mí" : "Todos los leads"}
+            {onlyMine ? "Donde participo" : "Todos los leads"}
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
             </svg>
@@ -205,7 +189,7 @@ export function PipelineBoard() {
                 }}
                 className="block w-full px-3 py-1.5 text-left text-ink-soft hover:bg-bg-subtle"
               >
-                Asignado a mí
+                Donde participo
               </button>
             </div>
           )}
@@ -281,7 +265,7 @@ export function PipelineBoard() {
 
         <div className="ml-auto flex items-center gap-3">
           <p className="text-sm text-ink-soft">
-            {formatNumber(filteredLeads.length)} leads: {formatCurrency(sumBudget(filteredLeads))}
+            {formatNumber(filteredLeads.length)} leads
           </p>
 
           <div className="relative">
@@ -357,7 +341,7 @@ export function PipelineBoard() {
                 <PipelineColumn
                   key={stage.id}
                   title={stage.label.toUpperCase()}
-                  subtitle={`${stageLeads.length} Clientes Potenciales: ${formatCurrency(sumBudget(stageLeads))}`}
+                  subtitle={`${stageLeads.length} Clientes Potenciales`}
                   accentColor={stage.color}
                   quickActionLabel={stage.id === "contacto_inicial" ? "Lead rápido" : undefined}
                   onQuickAction={() => setModalStage(stage.id)}
@@ -375,7 +359,7 @@ export function PipelineBoard() {
             return (
               <PipelineColumn
                 title="VENTA PERDIDA"
-                subtitle={`${perdidos.length} Clientes Potenciales: ${formatCurrency(sumBudget(perdidos))}`}
+                subtitle={`${perdidos.length} Clientes Potenciales`}
                 accentColor="bg-danger"
                 isEmpty={perdidos.length === 0}
               >
@@ -398,6 +382,11 @@ export function PipelineBoard() {
       )}
     </section>
   );
+}
+
+function participatesIn(lead: Lead, agentId: string, isMockMode: boolean): boolean {
+  if (isMockMode) return lead.assignedAgentId === agentId;
+  return (lead.participants ?? []).some((p) => p.agentId === agentId);
 }
 
 // Ultimo dia (inclusive) del periodo, para el nombre del archivo: end es exclusivo.

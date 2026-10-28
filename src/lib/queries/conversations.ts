@@ -99,22 +99,6 @@ export function useAgents() {
   });
 }
 
-export function useAssignAgent(conversationId: string | null) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (agentId: string | null) =>
-      fetchJson<{ conversation: InboxConversation }>(`/api/lydia/conversations/${conversationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assignedAgentId: agentId }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    },
-  });
-}
-
 type ConversationsCache = { conversations: InboxConversation[] };
 
 export function useMarkConversationRead() {

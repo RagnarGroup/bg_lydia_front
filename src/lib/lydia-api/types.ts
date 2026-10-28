@@ -39,6 +39,8 @@ export interface EvoNote {
 
 export interface EvoConversation {
   id: string;
+  // LYD-123: asesoras que escribieron en el chat (autoria de mensajes).
+  participantIds?: string[];
   remoteJid: string;
   name: string | null;
   status: ChatStatus;
@@ -256,7 +258,8 @@ export interface EvoChatParticipant {
   agent: { id: string; name: string; email: string | null; color: string | null };
   percent: number;
   reason: string | null;
-  reportDate: string;
+  // null en un lead de la landing: lo atiende al 100% quien lo tomo.
+  reportDate: string | null;
 }
 
 // LYD-9: calendario por agente. GET/POST /crm/calendar-events, PATCH/DELETE /crm/calendar-events/:id
@@ -302,8 +305,8 @@ export interface EvoTemplateGroup {
 export interface EvoPersonalInsights {
   dialogosVigentes: number;
   dialogosSinReplica: number;
-  leadsGanados: { count: number; sumBudget: number };
-  leadsActivos: { count: number; sumBudget: number };
+  leadsGanados: { count: number };
+  leadsActivos: { count: number };
   leadsPerdidos: { count: number };
   leadsSinTareas: { count: number };
   fuentes: Record<string, number>;

@@ -9,9 +9,7 @@ import {
   insightsSnapshot,
   leads,
   conversations,
-  sumBudget,
 } from "@/lib/mock-data";
-import { formatCurrency } from "@/lib/format";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { usePersonalInsights } from "@/lib/queries/insights";
 import { boundsForDates, boundsForRange, type DashboardRange } from "@/lib/dashboard-range";
@@ -74,10 +72,10 @@ export function PersonalDashboard() {
     ? conversations.filter((c) => c.status === "sin_respuesta").length
     : realInsights.dialogosSinReplica;
   const leadsGanados = isMockMode
-    ? { count: mockLeadsGanados.length, sumBudget: sumBudget(mockLeadsGanados) }
+    ? { count: mockLeadsGanados.length }
     : realInsights.leadsGanados;
   const leadsActivos = isMockMode
-    ? { count: mockLeadsActivos.length, sumBudget: sumBudget(mockLeadsActivos) }
+    ? { count: mockLeadsActivos.length }
     : realInsights.leadsActivos;
   const leadsPerdidos = isMockMode ? mockLeadsPerdidos.length : realInsights.leadsPerdidos.count;
   const leadsSinTareas = isMockMode
@@ -233,14 +231,12 @@ export function PersonalDashboard() {
         <StatTile
           label="Leads ganados"
           value={String(leadsGanados.count)}
-          subValue={formatCurrency(leadsGanados.sumBudget)}
           delta={deltas?.leadsGanados}
           icon="embudo"
         />
         <StatTile
           label="Cantidad de leads activos"
           value={String(leadsActivos.count)}
-          subValue={formatCurrency(leadsActivos.sumBudget)}
           delta={deltas?.leadsActivos}
           icon="tabla"
         >
