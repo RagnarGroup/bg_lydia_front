@@ -168,7 +168,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         />
       </div>
 
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center">
         {started ? (
           <button
             type="button"
@@ -180,7 +180,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
           </button>
         ) : (
           <span className="relative">
-            <ContactAvatar seed={avatar?.seed ?? seed} avatarUrl={avatar?.url} className="h-12 w-12" />
+            <ContactAvatar seed={avatar?.seed ?? seed} avatarUrl={avatar?.url} className="h-14 w-14" />
             <span
               className={`absolute -bottom-1 -left-1.5 flex h-5 w-5 items-center justify-center rounded-full ${
                 avatar?.badgeClass ?? ""
