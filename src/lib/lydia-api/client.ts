@@ -26,6 +26,7 @@ import type {
   EvoBotFlow,
   EvoBotGraph,
   LeadStage,
+  LeadType,
 } from "./types";
 import type {
   LandingLead,
@@ -356,10 +357,11 @@ export async function deleteConversation(chatId: string): Promise<void> {
 // LYD-8: pipeline de leads
 
 export async function listLeads(
-  params: { stage?: LeadStage; assignedAgentId?: string; source?: string; chatId?: string } = {},
+  params: { stage?: LeadStage; leadType?: LeadType; assignedAgentId?: string; source?: string; chatId?: string } = {},
 ): Promise<EvoLead[]> {
   const query = new URLSearchParams();
   if (params.stage) query.set("stage", params.stage);
+  if (params.leadType) query.set("leadType", params.leadType);
   if (params.assignedAgentId) query.set("assignedAgentId", params.assignedAgentId);
   if (params.source) query.set("source", params.source);
   if (params.chatId) query.set("chatId", params.chatId);

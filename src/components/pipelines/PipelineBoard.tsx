@@ -17,6 +17,7 @@ import { useCreateLead, useLeads } from "@/lib/queries/leads";
 import { useAgents } from "@/lib/queries/conversations";
 import { campaignPeriodFor, isInPeriod, limaDayKey, listCampaignPeriods } from "@/lib/campaign-period";
 import { buildXlsx, downloadXlsx } from "@/lib/leads-export";
+import { ALL_LEAD_TYPES, LEAD_TYPES, leadTypeLabel, matchesLeadType, type LeadTypeFilter } from "@/lib/lead-types";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { PipelineColumn } from "./PipelineColumn";
 import { LeadCard } from "./LeadCard";
@@ -52,6 +53,9 @@ export function PipelineBoard() {
   // LYD-91: periodo de campana (20 al 19, hora de Lima); por defecto el actual.
   const [periodKey, setPeriodKey] = useState<string>(() => campaignPeriodFor(new Date()).key);
   const [view, setView] = useState<"tablero" | "dashboard">("tablero");
+  // LYD-115: por defecto solo oportunidades de matricula (ni postulantes
+  // laborales ni alumnos actuales).
+  const [typeFilter, setTypeFilter] = useState<LeadTypeFilter>("matricula");
 
   const periods = useMemo(() => {
     const oldest = leadList.reduce<string | null>(
@@ -65,6 +69,7 @@ export function PipelineBoard() {
   const filteredLeads = useMemo(() => {
     return leadList.filter((lead) => {
       if (selectedPeriod && !isInPeriod(lead.createdAt, selectedPeriod)) return false;
+      if (!matchesLeadType(lead, typeFilter)) return false;
       if (onlyMine && lead.assignedAgentId !== CURRENT_AGENT_ID) return false;
       if (search.trim()) {
         const query = search.trim().toLowerCase();
@@ -72,7 +77,7 @@ export function PipelineBoard() {
       }
       return true;
     });
-  }, [leadList, onlyMine, search, selectedPeriod, CURRENT_AGENT_ID]);
+  }, [leadList, onlyMine, search, selectedPeriod, typeFilter, CURRENT_AGENT_ID]);
 
   const filteredIncoming = useMemo(() => {
     if (!search.trim()) return incomingRequests;
@@ -90,6 +95,7 @@ export function PipelineBoard() {
       { header: "Email", width: 28 },
       { header: "Empresa", width: 20 },
       { header: "Origen", width: 22 },
+      { header: "Tipo", width: 20 },
       { header: "Etapa", width: 20 },
       { header: "Responsable", width: 18 },
       { header: "Participación (%)", width: 30 },
@@ -103,6 +109,7 @@ export function PipelineBoard() {
       lead.email,
       lead.company,
       lead.source,
+      leadTypeLabel(lead.leadType),
       pipelineStages.find((s) => s.id === lead.stage)?.label ?? lead.stage,
       (isMockMode
         ? getAgentById(lead.assignedAgentId)?.name
@@ -139,6 +146,7 @@ export function PipelineBoard() {
       id: `lead-local-${Date.now()}`,
       code: `AS${Math.floor(100 + Math.random() * 900)}`,
       leadNumber: `#${Math.floor(10000000 + Math.random() * 89999999)}`,
+      leadType: "matricula",
       contactName: data.contactName,
       phone: data.phone,
       source: data.source,
@@ -216,6 +224,20 @@ export function PipelineBoard() {
             </option>
           ))}
           <option value={ALL_PERIODS}>Todas las fechas</option>
+        </select>
+
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as LeadTypeFilter)}
+          aria-label="Tipo de lead"
+          className="rounded-md border border-line bg-surface px-2.5 py-1.5 text-sm text-ink-soft focus:border-brand focus:outline-none"
+        >
+          {LEAD_TYPES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+          <option value={ALL_LEAD_TYPES}>Todos los tipos</option>
         </select>
 
         <div className="flex rounded-md border border-line p-0.5 text-sm" role="tablist" aria-label="Vista">

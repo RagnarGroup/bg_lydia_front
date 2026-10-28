@@ -7,10 +7,13 @@ import { formatCurrency, formatLeadCardDate } from "@/lib/format";
 import { LYDIA_API_ENABLED } from "@/lib/lydia-api/config";
 import { useAgents } from "@/lib/queries/conversations";
 import { useLeads } from "@/lib/queries/leads";
+import { ALL_LEAD_TYPES, LEAD_TYPES, leadTypeLabel, matchesLeadType, type LeadTypeFilter } from "@/lib/lead-types";
 
 export function LeadsTable() {
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<PipelineStageId | "todas">("todas");
+  // LYD-115: por defecto solo matricula, igual que el tablero.
+  const [typeFilter, setTypeFilter] = useState<LeadTypeFilter>("matricula");
   const { data: realLeads = [], error: leadsError } = useLeads();
   const { data: realAgents = [] } = useAgents();
   const isMockMode = !LYDIA_API_ENABLED || leadsError !== null;
@@ -19,11 +22,12 @@ export function LeadsTable() {
   const filtered = useMemo(() => {
     return leads.filter((lead) => {
       if (stageFilter !== "todas" && lead.stage !== stageFilter) return false;
+      if (!matchesLeadType(lead, typeFilter)) return false;
       if (!search.trim()) return true;
       const query = search.trim().toLowerCase();
       return lead.contactName.toLowerCase().includes(query) || lead.leadNumber.toLowerCase().includes(query);
     });
-  }, [leads, search, stageFilter]);
+  }, [leads, search, stageFilter, typeFilter]);
 
   return (
     <section className="flex h-full flex-1 flex-col overflow-hidden bg-bg-subtle">
@@ -41,6 +45,20 @@ export function LeadsTable() {
               {s.label}
             </option>
           ))}
+        </select>
+
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as LeadTypeFilter)}
+          aria-label="Tipo de lead"
+          className="rounded-md border border-line px-2.5 py-1.5 text-sm text-ink-soft focus:border-brand focus:outline-none"
+        >
+          {LEAD_TYPES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+          <option value={ALL_LEAD_TYPES}>Todos los tipos</option>
         </select>
 
         <div className="relative min-w-[220px] flex-1">
@@ -73,6 +91,7 @@ export function LeadsTable() {
           <thead>
             <tr className="text-left text-xs font-semibold uppercase tracking-wide text-muted">
               <th className="border-b border-line pb-2">Lead</th>
+              <th className="border-b border-line pb-2">Tipo</th>
               <th className="border-b border-line pb-2">Etapa</th>
               <th className="border-b border-line pb-2">Responsable</th>
               <th className="border-b border-line pb-2">Presupuesto</th>
@@ -96,6 +115,9 @@ export function LeadsTable() {
                   <td className="border-b border-line-soft py-2.5 pr-4">
                     <p className="font-medium text-ink">{lead.contactName}</p>
                     <p className="text-xs text-brand">Lead {lead.leadNumber}</p>
+                  </td>
+                  <td className="border-b border-line-soft py-2.5 pr-4 text-ink-soft">
+                    {leadTypeLabel(lead.leadType)}
                   </td>
                   <td className="border-b border-line-soft py-2.5 pr-4">
                     <span

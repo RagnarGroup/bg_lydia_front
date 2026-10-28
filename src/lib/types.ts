@@ -1,6 +1,10 @@
 export type PipelineStageId =
   "contacto_inicial" | "negociacion" | "promesa_pago" | "discusion_contrato" | "matriculado" | "venta_perdida";
 
+// LYD-115: solo "matricula" es una oportunidad de venta; los demas tipos
+// quedan fuera del pipeline y de las metricas comerciales.
+export type LeadType = "matricula" | "empleo" | "alumno_actual" | "otro";
+
 export interface PipelineStage {
   id: PipelineStageId;
   label: string;
@@ -29,6 +33,7 @@ export interface Lead {
   budget?: string;
   budgetAmount: number; // en soles, para sumar en el pipeline
   stage: PipelineStageId;
+  leadType: LeadType;
   assignedAgentId: string | null;
   createdAt: string; // ISO, fecha en que entró a su etapa actual
   hasPendingTasks: boolean;
