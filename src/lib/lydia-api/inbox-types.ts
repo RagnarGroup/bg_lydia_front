@@ -101,8 +101,7 @@ export interface InboxConversation {
   // Necesaria para pedir mensajes y enviar contra el canal correcto.
   instanceName?: string;
   contact: InboxContact;
-  // LYD-123: asesoras que escribieron en el chat; reemplaza al responsable.
-  participantIds: string[];
+  assignee?: InboxAgent;
   status: InboxConversationStatus;
   lastMessagePreview: string;
   lastMessageAt: string; // ISO

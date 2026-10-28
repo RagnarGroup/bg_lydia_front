@@ -39,8 +39,6 @@ export interface EvoNote {
 
 export interface EvoConversation {
   id: string;
-  // LYD-123: asesoras que escribieron en el chat (autoria de mensajes).
-  participantIds?: string[];
   remoteJid: string;
   name: string | null;
   status: ChatStatus;

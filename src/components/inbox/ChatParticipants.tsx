@@ -4,6 +4,7 @@ import { useChatParticipants } from "@/lib/queries/conversations";
 
 interface Props {
   conversationId: string;
+  assigneeId?: string;
   canUseBackend: boolean;
 }
 
@@ -15,7 +16,7 @@ function formatReportDate(reportDate: string): string {
 // LYD-117: porcentaje de participacion de cada asesora segun su aporte real,
 // lo asigna la auditoria diaria de las 21:00 (no cuenta mensajes). Una
 // conversacion sin asesoras ese dia todavia no tiene calculo.
-export function ChatParticipants({ conversationId, canUseBackend }: Props) {
+export function ChatParticipants({ conversationId, assigneeId, canUseBackend }: Props) {
   const { data: participants = [], isLoading, isError } = useChatParticipants(conversationId, canUseBackend);
 
   if (!canUseBackend) return null;
@@ -39,7 +40,10 @@ export function ChatParticipants({ conversationId, canUseBackend }: Props) {
                     className="h-2 w-2 shrink-0 rounded-full bg-brand"
                     style={agent.color ? { backgroundColor: agent.color } : undefined}
                   />
-                  <span className="min-w-0 truncate text-ink-soft">{agent.name}</span>
+                  <span className="min-w-0 truncate text-ink-soft">
+                    {agent.name}
+                    {agent.id === assigneeId && <span className="ml-1.5 text-[11px] text-muted">(responsable)</span>}
+                  </span>
                   <span className="ml-auto font-medium text-ink">{percent}%</span>
                 </div>
                 {reason && <p className="pl-3.5 text-[11px] text-muted">{reason}</p>}

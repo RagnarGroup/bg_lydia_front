@@ -8,7 +8,7 @@
  * para que ConversationList/ChatThread/LeadDetailPanel no necesiten saber
  * si el dato es real o de muestra.
  */
-import { conversations, getLeadByConversationId, getMessagesByConversationId } from "@/lib/mock-data";
+import { conversations, getAgentById, getLeadByConversationId, getMessagesByConversationId } from "@/lib/mock-data";
 import type { InboxConversation, InboxMessage } from "./inbox-types";
 
 const idByMockConversationId = new Map(conversations.map((c, i) => [c.id, `mock-${i + 1}`]));
@@ -17,6 +17,7 @@ export const mockInboxConversations: InboxConversation[] = conversations
   .map((conversation) => {
     const lead = getLeadByConversationId(conversation.id);
     if (!lead) return null;
+    const agent = getAgentById(conversation.assignedAgentId);
     const id = idByMockConversationId.get(conversation.id)!;
 
     const entry: InboxConversation = {
@@ -28,7 +29,7 @@ export const mockInboxConversations: InboxConversation[] = conversations
         phone: lead.phone || null,
         avatarUrl: "",
       },
-      participantIds: conversation.assignedAgentId ? [conversation.assignedAgentId] : [],
+      assignee: agent ? { id: "mock-agent", name: agent.name, avatarUrl: "" } : undefined,
       status: conversation.status,
       lastMessagePreview: conversation.lastMessagePreview,
       lastMessageAt: conversation.lastMessageAt,
