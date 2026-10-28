@@ -216,7 +216,7 @@ export function MessageBubble({
                 messageId={message.id}
                 media={message.media}
                 instanceName={instanceName}
-                avatar={contactAvatar}
+                avatar={contactAvatar && { ...contactAvatar, badgeClass: isOutbound ? "bg-brand" : "bg-surface" }}
               />
             )}
             {message.media?.caption && (
