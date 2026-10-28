@@ -1,3 +1,4 @@
+import { deliveryStatus } from "./delivery-status";
 import type {
   EvoAgent,
   EvoCalendarEvent,
@@ -149,7 +150,6 @@ function quotedPreview(message: EvoMessage["message"]): string | null {
 
 export function adaptMessage(message: EvoMessage, reactions: InboxMessageReaction[] = []): InboxMessage {
   const direction: InboxMessage["direction"] = message.key.fromMe ? "outbound" : "inbound";
-  const lastStatus = message.MessageUpdate?.[message.MessageUpdate.length - 1]?.status;
   const lean = { ...message, message: withoutMediaPayload(message.message) };
   const media = detectMedia(lean);
 
@@ -158,7 +158,7 @@ export function adaptMessage(message: EvoMessage, reactions: InboxMessageReactio
     direction,
     text: media ? (media.caption ?? "") : messageText(message.message),
     sentAt: new Date(message.messageTimestamp * 1000).toISOString(),
-    read: lastStatus === "READ" || lastStatus === "read",
+    delivery: deliveryStatus(message.MessageUpdate),
     senderName: message.pushName ?? undefined,
     media,
     raw: { key: message.key, message: lean.message },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { DeliveryStatus } from "@/lib/lydia-api/delivery-status";
 import type { InboxMessage, InboxMessageMedia } from "@/lib/lydia-api/inbox-types";
 import { formatMessageTime } from "@/lib/format";
 import { useFetchMediaDataUrl } from "@/lib/queries/conversations";
@@ -69,16 +70,22 @@ async function triggerDownload(dataUrl: string, fileName: string) {
 // LYD-76: hora + estado de lectura dentro de la burbuja, como en WhatsApp.
 // "inline" va al pie del texto; "overlay" va encima de una foto/video/sticker
 // sin texto, sobre una pastilla oscura para que se lea sobre cualquier imagen.
+const DELIVERY_LABEL: Record<DeliveryStatus, string> = {
+  sent: "Enviado",
+  delivered: "Entregado",
+  read: "Leído",
+};
+
 function MessageMeta({
   sentAt,
   isOutbound,
-  read,
+  delivery,
   variant,
   className = "",
 }: {
   sentAt: string;
   isOutbound: boolean;
-  read: boolean;
+  delivery: DeliveryStatus;
   variant: "inline" | "overlay";
   className?: string;
 }) {
@@ -88,6 +95,7 @@ function MessageMeta({
       : isOutbound
         ? "text-white/75"
         : "text-muted";
+  const read = delivery === "read";
   const checkTone = read ? (variant === "overlay" || isOutbound ? "text-sky-200" : "text-brand") : "";
   return (
     <span className={`flex items-center gap-0.5 whitespace-nowrap text-[11px] leading-none ${tone} ${className}`}>
@@ -101,9 +109,9 @@ function MessageMeta({
           stroke="currentColor"
           strokeWidth="2.5"
           className={checkTone}
-          aria-label={read ? "Leído" : "Enviado"}
+          aria-label={DELIVERY_LABEL[delivery]}
         >
-          {read ? (
+          {delivery !== "sent" ? (
             <>
               <polyline points="1 12 6 17 11 10" />
               <polyline points="9 15 17 6" />
@@ -214,19 +222,19 @@ export function MessageBubble({
               <MessageMeta
                 sentAt={message.sentAt}
                 isOutbound={isOutbound}
-                read={message.read}
+                delivery={message.delivery}
                 variant="overlay"
                 className={`absolute ${isSticker ? "bottom-1 right-1" : "bottom-3 right-3"}`}
               />
             ) : metaPlacement === "row" ? (
               <div className="flex justify-end px-1.5 pb-0.5 pt-1">
-                <MessageMeta sentAt={message.sentAt} isOutbound={isOutbound} read={message.read} variant="inline" />
+                <MessageMeta sentAt={message.sentAt} isOutbound={isOutbound} delivery={message.delivery} variant="inline" />
               </div>
             ) : (
               <MessageMeta
                 sentAt={message.sentAt}
                 isOutbound={isOutbound}
-                read={message.read}
+                delivery={message.delivery}
                 variant="inline"
                 className={`absolute ${message.media ? "bottom-2 right-3.5" : "bottom-1.5 right-2.5"}`}
               />

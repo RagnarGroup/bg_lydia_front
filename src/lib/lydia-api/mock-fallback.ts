@@ -49,7 +49,7 @@ export function getMockMessages(conversationId: string): InboxMessage[] {
     direction: message.direction,
     text: message.text,
     sentAt: message.sentAt,
-    read: message.read ?? false,
+    delivery: message.read ? "read" : "sent",
     senderName: message.senderName,
     // LYD-52: sin key/message real que citar en modo mock -- responder/
     // reenviar/reaccionar quedan deshabilitados ahi (ver InboxView).

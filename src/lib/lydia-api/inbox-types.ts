@@ -6,6 +6,7 @@
  */
 
 import type { LeadAttribution } from "@/lib/attribution";
+import type { DeliveryStatus } from "./delivery-status";
 
 export interface InboxAgent {
   id: string;
@@ -62,7 +63,7 @@ export interface InboxMessage {
   direction: InboxMessageDirection;
   text: string;
   sentAt: string; // ISO
-  read: boolean;
+  delivery: DeliveryStatus;
   senderName?: string;
   media?: InboxMessageMedia;
   // LYD-52: key + message crudo de Evolution API, para citar/reaccionar a
