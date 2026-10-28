@@ -84,12 +84,14 @@ function MessageMeta({
   isOutbound,
   delivery,
   variant,
+  showChecks = isOutbound,
   className = "",
 }: {
   sentAt: string;
   isOutbound: boolean;
   delivery: DeliveryStatus;
   variant: "inline" | "overlay";
+  showChecks?: boolean;
   className?: string;
 }) {
   const tone =
@@ -103,7 +105,7 @@ function MessageMeta({
   return (
     <span className={`flex items-center gap-0.5 whitespace-nowrap text-[11px] leading-none ${tone} ${className}`}>
       {formatMessageTime(sentAt)}
-      {isOutbound && (
+      {showChecks && (
         <svg
           width="18"
           height="12"
@@ -170,7 +172,9 @@ export function MessageBubble({
   // que le reserva el lugar para que el texto no quede debajo de la hora.
   const isSticker = media?.kind === "sticker";
   // LYD-132: nota de voz sin texto: debajo del final de la forma de onda, al
-  // nivel de la duracion (la foto ocupa todo el alto a la derecha).
+  // nivel de la duracion y pegada al borde inferior. En las del cliente
+  // tambien lleva el doble check (entregado) a la derecha de la hora, como
+  // las ve el cliente en su WhatsApp.
   const metaPlacement: "inline" | "overlay" | "row" | "audio" =
     media && !media.caption
       ? media.kind === "image" || media.kind === "video" || media.kind === "sticker"
@@ -182,7 +186,8 @@ export function MessageBubble({
   const metaSpacer = <span aria-hidden className={`inline-block ${isOutbound ? "w-[4.25rem]" : "w-11"}`} />;
   // Los stickers van sin burbuja, igual que en WhatsApp. Esquinas casi
   // rectas como alla; solo el primero de cada racha lleva la esquina en
-  // punta hacia quien escribe.
+  // punta y la colita hacia quien escribe (derecha la asesora, izquierda
+  // el cliente).
   const bubbleClass = isSticker
     ? "relative"
     : `relative rounded-lg text-sm leading-relaxed ${
@@ -205,6 +210,24 @@ export function MessageBubble({
           <span className="self-end text-xs text-muted">{message.senderName}</span>
         )}
         <div className={`relative ${message.reactions.length > 0 ? "pb-2" : ""}`} onContextMenu={handleContextMenu}>
+          {isGroupStart && !isSticker && (
+            <svg
+              aria-hidden
+              width="8"
+              height="13"
+              viewBox="0 0 8 13"
+              className={`absolute -top-px ${isOutbound ? "-right-2 text-brand" : "-left-2 text-surface"}`}
+            >
+              <path
+                fill="currentColor"
+                d={
+                  isOutbound
+                    ? "M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z"
+                    : "M1.533 3.568L8 12.193V1H2.812C1.042 1 .474 2.156 1.533 3.568z"
+                }
+              />
+            </svg>
+          )}
           <div className={bubbleClass}>
             {message.quotedPreview && (
               <p
@@ -253,9 +276,10 @@ export function MessageBubble({
               <MessageMeta
                 sentAt={message.sentAt}
                 isOutbound={isOutbound}
-                delivery={message.delivery}
+                delivery={isOutbound ? message.delivery : "delivered"}
                 variant="inline"
-                className={`absolute bottom-3.5 ${isOutbound ? "right-[4.625rem]" : "right-2.5"}`}
+                showChecks
+                className={`absolute bottom-2 ${isOutbound ? "right-[4.625rem]" : "right-2.5"}`}
               />
             ) : metaPlacement === "row" ? (
               <div className="flex justify-end px-1.5 pb-0.5 pt-1">

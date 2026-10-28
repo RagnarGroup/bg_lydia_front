@@ -120,7 +120,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         }}
       />
 
-      <div className="flex shrink-0 flex-col pb-4">
+      <div className="flex shrink-0 flex-col pb-2.5">
         <button
           type="button"
           onClick={toggle}
@@ -140,7 +140,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         </button>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col pb-4">
+      <div className="flex min-w-0 flex-1 flex-col pb-2.5">
         <div
           role="slider"
           tabIndex={0}
@@ -203,7 +203,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
       </div>
 
       <span
-        className={`pointer-events-none absolute bottom-3.5 text-[11px] leading-none tabular-nums opacity-75 ${
+        className={`pointer-events-none absolute bottom-2 text-[11px] leading-none tabular-nums opacity-75 ${
           avatarLeft ? "left-[7.375rem]" : "left-[3.375rem]"
         }`}
       >
