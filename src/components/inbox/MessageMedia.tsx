@@ -4,12 +4,13 @@ import { useState } from "react";
 import type { InboxMessageMedia } from "@/lib/lydia-api/inbox-types";
 import { useResolveMedia } from "@/lib/queries/conversations";
 import { Icon } from "@/components/icons";
-import { VoiceNotePlayer } from "./VoiceNotePlayer";
+import { VoiceNotePlayer, type VoiceNoteAvatar } from "./VoiceNotePlayer";
 
 interface Props {
   messageId: string;
   media: InboxMessageMedia;
   instanceName: string;
+  avatar?: VoiceNoteAvatar;
 }
 
 // LYD-15: imagen/sticker/audio/video se resuelven solos al pintar el bubble
@@ -26,7 +27,7 @@ const MEDIA_LABEL: Partial<Record<InboxMessageMedia["kind"], string>> = {
   document: "el documento",
 };
 
-export function MessageMedia({ messageId, media, instanceName }: Props) {
+export function MessageMedia({ messageId, media, instanceName, avatar }: Props) {
   const [manualLoad, setManualLoad] = useState(false);
   const enabled = AUTO_LOAD_KINDS.includes(media.kind) || manualLoad;
   const {
@@ -107,5 +108,5 @@ export function MessageMedia({ messageId, media, instanceName }: Props) {
     return <video src={dataUrl} controls className="max-w-xs rounded-lg" />;
   }
 
-  return <VoiceNotePlayer src={dataUrl} seed={messageId} />;
+  return <VoiceNotePlayer src={dataUrl} seed={messageId} avatar={avatar} />;
 }

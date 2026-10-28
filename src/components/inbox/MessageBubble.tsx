@@ -6,6 +6,7 @@ import type { InboxMessage, InboxMessageMedia } from "@/lib/lydia-api/inbox-type
 import { formatMessageTime } from "@/lib/format";
 import { useFetchMediaDataUrl } from "@/lib/queries/conversations";
 import { MessageMedia } from "./MessageMedia";
+import type { VoiceNoteAvatar } from "./VoiceNotePlayer";
 import { MessageContextMenu } from "./MessageContextMenu";
 import { ForwardMessageDialog } from "./ForwardMessageDialog";
 import { MessageDetailsDialog } from "./MessageDetailsDialog";
@@ -20,6 +21,8 @@ interface Props {
   // LYD-76: primer mensaje de una racha de la misma persona -- solo ahi va
   // el nombre de quien envio, como en los grupos de WhatsApp.
   isGroupStart?: boolean;
+  // LYD-132: foto que muestra el reproductor de notas de voz.
+  contactAvatar?: VoiceNoteAvatar;
 }
 
 // LYD-52: cuanto se aleja el menu del borde de la ventana para no salirse
@@ -135,6 +138,7 @@ export function MessageBubble({
   onReact,
   onForward,
   isGroupStart = true,
+  contactAvatar,
 }: Props) {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [showForward, setShowForward] = useState(false);
@@ -207,7 +211,14 @@ export function MessageBubble({
                 {message.quotedPreview}
               </p>
             )}
-            {message.media && <MessageMedia messageId={message.id} media={message.media} instanceName={instanceName} />}
+            {message.media && (
+              <MessageMedia
+                messageId={message.id}
+                media={message.media}
+                instanceName={instanceName}
+                avatar={contactAvatar}
+              />
+            )}
             {message.media?.caption && (
               <p className="whitespace-pre-line px-2 pb-0.5 pt-1.5">
                 {message.media.caption}

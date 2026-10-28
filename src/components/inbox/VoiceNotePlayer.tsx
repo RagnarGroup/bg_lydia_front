@@ -1,18 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ContactAvatar } from "@/components/ContactAvatar";
 import { formatAudioTime, peaksFromSamples, placeholderPeaks, WAVEFORM_BARS } from "@/lib/waveform";
 
 // LYD-132: reproductor de notas de voz al estilo WhatsApp (play/pausa, forma
 // de onda clickeable, tiempo y velocidad) en vez del <audio controls> nativo.
 // Toma el color del texto de la burbuja (currentColor), asi sirve igual en
-// mensajes entrantes y salientes.
+// mensajes entrantes y salientes. La duracion va en la fila de la hora del
+// mensaje (posicion absoluta respecto de la burbuja) y a la derecha va la foto
+// del contacto, que se cambia por la velocidad mientras el audio esta en curso.
 
 const SPEEDS = [1, 1.5, 2] as const;
 
 let playingNow: HTMLAudioElement | null = null;
 
-export function VoiceNotePlayer({ src, seed }: { src: string; seed: string }) {
+export interface VoiceNoteAvatar {
+  seed: string;
+  url?: string | null;
+}
+
+export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: string; avatar?: VoiceNoteAvatar }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [peaks, setPeaks] = useState(() => placeholderPeaks(seed));
   const [playing, setPlaying] = useState(false);
@@ -89,7 +97,7 @@ export function VoiceNotePlayer({ src, seed }: { src: string; seed: string }) {
   const started = playing || current > 0;
 
   return (
-    <div className="flex w-72 max-w-full items-center gap-2.5 px-1 pt-1.5">
+    <div className="flex w-72 max-w-full items-center gap-2 px-1 pt-1">
       <audio
         ref={audioRef}
         src={src}
@@ -124,53 +132,70 @@ export function VoiceNotePlayer({ src, seed }: { src: string; seed: string }) {
         )}
       </button>
 
-      <div className="min-w-0 flex-1">
-        <div
-          role="slider"
-          tabIndex={0}
-          aria-label="Posición del audio"
-          aria-valuemin={0}
-          aria-valuemax={Math.round(duration)}
-          aria-valuenow={Math.round(current)}
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            seekTo((e.clientX - rect.left) / rect.width);
-          }}
-          onKeyDown={(e) => {
-            if (!duration) return;
-            if (e.key === "ArrowRight") seekTo((current + 5) / duration);
-            if (e.key === "ArrowLeft") seekTo((current - 5) / duration);
-          }}
-          className="relative flex h-7 cursor-pointer items-center gap-[2px] focus:outline-none"
-        >
-          {peaks.map((peak, i) => (
-            <span
-              key={i}
-              className={`w-[3px] flex-1 rounded-full transition-colors ${
-                (i + 0.5) / peaks.length <= progress ? "bg-current" : "bg-current/35"
-              }`}
-              style={{ height: `${Math.round(peak * 100)}%` }}
-            />
-          ))}
+      <div
+        role="slider"
+        tabIndex={0}
+        aria-label="Posición del audio"
+        aria-valuemin={0}
+        aria-valuemax={Math.round(duration)}
+        aria-valuenow={Math.round(current)}
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          seekTo((e.clientX - rect.left) / rect.width);
+        }}
+        onKeyDown={(e) => {
+          if (!duration) return;
+          if (e.key === "ArrowRight") seekTo((current + 5) / duration);
+          if (e.key === "ArrowLeft") seekTo((current - 5) / duration);
+        }}
+        className="relative flex h-8 min-w-0 flex-1 cursor-pointer items-center gap-[2px] focus:outline-none"
+      >
+        {peaks.map((peak, i) => (
           <span
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current shadow-sm"
-            style={{ left: `${progress * 100}%` }}
+            key={i}
+            className={`w-[3px] flex-1 rounded-full transition-colors ${
+              (i + 0.5) / peaks.length <= progress ? "bg-current" : "bg-current/35"
+            }`}
+            style={{ height: `${Math.round(peak * 100)}%` }}
           />
-        </div>
-        <div className="mt-0.5 flex items-center justify-between text-[11px] leading-none opacity-75">
-          <span className="tabular-nums">{formatAudioTime(started ? current : duration)}</span>
-        </div>
+        ))}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current shadow-sm"
+          style={{ left: `${progress * 100}%` }}
+        />
       </div>
 
-      <button
-        type="button"
-        onClick={cycleSpeed}
-        aria-label={`Velocidad ${speed}x`}
-        className="shrink-0 rounded-full bg-current/15 px-2 py-0.5 text-[11px] font-semibold tabular-nums"
-      >
-        <span className="opacity-90">{speed}x</span>
-      </button>
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+        {started ? (
+          <button
+            type="button"
+            onClick={cycleSpeed}
+            aria-label={`Velocidad ${speed}x`}
+            className="rounded-full bg-current/15 px-2 py-0.5 text-[11px] font-semibold tabular-nums"
+          >
+            <span className="opacity-90">{speed}x</span>
+          </button>
+        ) : (
+          <span className="relative">
+            <ContactAvatar seed={avatar?.seed ?? seed} avatarUrl={avatar?.url} className="h-12 w-12" />
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden
+              className="absolute -bottom-0.5 -left-1 drop-shadow"
+            >
+              <path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6.5-3.5a1 1 0 1 0-2 0 4.5 4.5 0 0 1-9 0 1 1 0 1 0-2 0 6.5 6.5 0 0 0 5.5 6.42V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.08a6.5 6.5 0 0 0 5.5-6.42Z" />
+            </svg>
+          </span>
+        )}
+      </div>
+
+      <span className="pointer-events-none absolute bottom-2 left-[3.4rem] text-[11px] leading-none tabular-nums opacity-75">
+        {formatAudioTime(started ? current : duration)}
+      </span>
     </div>
   );
 }
