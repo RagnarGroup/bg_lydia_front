@@ -111,6 +111,8 @@ export interface InboxConversation {
   agentTags?: Record<string, string>;
   // LYD-96: origen del lead (fuente + campana/anuncio).
   attribution?: LeadAttribution;
+  // LYD-118: ISO desde el que el cliente espera respuesta (ver lib/reply-deadline.ts).
+  awaitingReplySince?: string | null;
 }
 
 // LYD-74: una linea del chat de la asesora con el agente IA.

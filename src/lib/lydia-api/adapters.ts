@@ -308,5 +308,8 @@ export function adaptConversation(conversation: EvoConversation): InboxConversat
     inboxChannel: channelFromIntegration(conversation.integration),
     agentTags: conversation.agentTags ?? {},
     attribution: conversation.attribution ?? undefined,
+    awaitingReplySince: conversation.awaitingReplySince
+      ? new Date(conversation.awaitingReplySince * 1000).toISOString()
+      : null,
   };
 }
