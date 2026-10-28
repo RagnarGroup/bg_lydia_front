@@ -102,22 +102,24 @@ function MessageMeta({
       {formatMessageTime(sentAt)}
       {isOutbound && (
         <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
+          width="18"
+          height="12"
+          viewBox="0 0 18 12"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2.5"
-          className={checkTone}
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`ml-0.5 shrink-0 ${checkTone}`}
           aria-label={DELIVERY_LABEL[delivery]}
         >
           {delivery !== "sent" ? (
             <>
-              <polyline points="1 12 6 17 11 10" />
-              <polyline points="9 15 17 6" />
+              <polyline points="1.5 6.5 4.5 9.5 11 2.5" />
+              <polyline points="8 8 9.5 9.5 16 2.5" />
             </>
           ) : (
-            <polyline points="4 12 9 17 20 6" />
+            <polyline points="4 6.5 7 9.5 13.5 2.5" />
           )}
         </svg>
       )}
@@ -228,7 +230,12 @@ export function MessageBubble({
               />
             ) : metaPlacement === "row" ? (
               <div className="flex justify-end px-1.5 pb-0.5 pt-1">
-                <MessageMeta sentAt={message.sentAt} isOutbound={isOutbound} delivery={message.delivery} variant="inline" />
+                <MessageMeta
+                  sentAt={message.sentAt}
+                  isOutbound={isOutbound}
+                  delivery={message.delivery}
+                  variant="inline"
+                />
               </div>
             ) : (
               <MessageMeta
