@@ -10,7 +10,8 @@ import { formatAudioTime, peaksFromSamples, placeholderPeaks, WAVEFORM_BARS } fr
 // mensajes entrantes y salientes. La duracion va en la fila de la hora del
 // mensaje, ambas debajo de la forma de onda (posicion absoluta respecto de la
 // burbuja, ver MessageBubble). A la derecha va la foto del contacto a todo el
-// alto, que se cambia por la velocidad mientras el audio esta en curso.
+// alto, que se cambia por la velocidad mientras el audio esta en curso. Si la
+// foto va a la izquierda, la onda termina justo antes de los checks.
 
 const SPEEDS = [1, 1.5, 2] as const;
 
@@ -140,7 +141,7 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         </button>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col pb-2.5">
+      <div className={`flex min-w-0 flex-1 flex-col pb-2.5 ${avatarLeft ? "mr-5" : ""}`}>
         <div
           role="slider"
           tabIndex={0}
