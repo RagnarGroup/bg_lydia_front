@@ -18,6 +18,8 @@ let playingNow: HTMLAudioElement | null = null;
 export interface VoiceNoteAvatar {
   seed: string;
   url?: string | null;
+  // Fondo del circulo del microfono: el mismo color de la burbuja.
+  badgeClass?: string;
 }
 
 export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: string; avatar?: VoiceNoteAvatar }) {
@@ -179,16 +181,15 @@ export function VoiceNotePlayer({ src, seed, avatar }: { src: string; seed: stri
         ) : (
           <span className="relative">
             <ContactAvatar seed={avatar?.seed ?? seed} avatarUrl={avatar?.url} className="h-12 w-12" />
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden
-              className="absolute -bottom-0.5 -left-1 drop-shadow"
+            <span
+              className={`absolute -bottom-1 -left-1.5 flex h-5 w-5 items-center justify-center rounded-full ${
+                avatar?.badgeClass ?? ""
+              }`}
             >
-              <path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6.5-3.5a1 1 0 1 0-2 0 4.5 4.5 0 0 1-9 0 1 1 0 1 0-2 0 6.5 6.5 0 0 0 5.5 6.42V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.08a6.5 6.5 0 0 0 5.5-6.42Z" />
-            </svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6.5-3.5a1 1 0 1 0-2 0 4.5 4.5 0 0 1-9 0 1 1 0 1 0-2 0 6.5 6.5 0 0 0 5.5 6.42V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.08a6.5 6.5 0 0 0 5.5-6.42Z" />
+              </svg>
+            </span>
           </span>
         )}
       </div>
