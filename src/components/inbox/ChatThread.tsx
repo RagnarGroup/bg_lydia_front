@@ -265,6 +265,10 @@ export function ChatThread({
                         onReact={onReact}
                         onForward={onForward}
                         isGroupStart={isGroupStart}
+                        contactAvatar={{
+                          seed: conversation.contact.lydiaContactId,
+                          url: conversation.contact.avatarUrl,
+                        }}
                       />
                     </div>
                   );
