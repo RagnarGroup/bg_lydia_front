@@ -13,21 +13,22 @@ interface Props {
   nowMs: number;
 }
 
-// LYD-118: franja a la izquierda (inset, sin mover el contenido) y fondo suave.
-// La franja se mantiene aunque el chat este abierto; el fondo, no.
+// LYD-118: franja a la izquierda (inset, sin mover el contenido) y fondo
+// saturado, para que un chat atrasado se distinga de un vistazo. La franja se
+// mantiene aunque el chat este abierto; el fondo, no.
 const URGENCY_STRIPE: Record<ReplyUrgency, string> = {
-  warning: "shadow-[inset_4px_0_0_#f59e0b]",
-  overdue: "shadow-[inset_4px_0_0_#dc2626]",
+  warning: "shadow-[inset_6px_0_0_#f59e0b]",
+  overdue: "shadow-[inset_6px_0_0_#dc2626]",
 };
 
 const URGENCY_ROW: Record<ReplyUrgency, string> = {
-  warning: "bg-amber-50 hover:bg-amber-100/70",
-  overdue: "bg-red-50 hover:bg-red-100/70",
+  warning: "bg-amber-200/80 hover:bg-amber-200",
+  overdue: "bg-red-200/80 hover:bg-red-200",
 };
 
 const URGENCY_PILL: Record<ReplyUrgency, string> = {
-  warning: "bg-amber-100 text-amber-800",
-  overdue: "bg-red-100 text-red-700",
+  warning: "bg-amber-500 text-white",
+  overdue: "bg-red-600 text-white animate-pulse",
 };
 
 export function ConversationListItem({ conversation, active, onClick, nowMs }: Props) {
@@ -70,9 +71,16 @@ export function ConversationListItem({ conversation, active, onClick, nowMs }: P
           <div className="flex shrink-0 items-center gap-1">
             {urgency && waited !== null && (
               <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${URGENCY_PILL[urgency]}`}
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold shadow-sm ${URGENCY_PILL[urgency]}`}
                 title="Tiempo que el cliente lleva esperando respuesta"
               >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden>
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-12.5a.75.75 0 0 0-1.5 0V10c0 .2.08.39.22.53l2.5 2.5a.75.75 0 1 0 1.06-1.06l-2.28-2.28V5.5Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
                 {formatWaiting(waited)}
               </span>
             )}
